@@ -1,5 +1,5 @@
 .data/
 .vector_cache/
-_pycache_/
+__pycache__/
 runs/
 save/
