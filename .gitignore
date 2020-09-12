@@ -1,0 +1,5 @@
+.data/
+.vector_cache/
+_pycache_/
+runs/
+save/
