@@ -14,8 +14,8 @@
 
 This application uses Open Source components. You can find the source code of their open source projects along with license information below. We acknowledge and are grateful to these developers for their contributions to open source.
 
-Project: Text-Classification-Pytorch <https://github.com/prakashpandey9/Text-Classification-Pytorch>
-Copyright (c) 2018 Prakash Pandey
+Project: Text-Classification-Pytorch <https://github.com/prakashpandey9/Text-Classification-Pytorch>  
+Copyright (c) 2018 Prakash Pandey  
 License (MIT) <https://github.com/prakashpandey9/Text-Classification-Pytorch/blob/master/LICENSE.txt>
 
 ## References
