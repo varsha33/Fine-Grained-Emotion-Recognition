@@ -18,7 +18,7 @@ class BERT(nn.Module):
 
         text_fea = self.encoder(text,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
         
-        return text_fea.hidden_states[-1]
+        return text_fea.hidden_states[-4:]
 
 class simple_BERT(nn.Module):
 
@@ -39,9 +39,9 @@ class BERT_RCNN(nn.Module):
     def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,lstm_hidden_size=128):
         super(BERT_RCNN, self).__init__()
         
-        checkpoint = torch.load(resume_path)
-        start_epoch = checkpoint['epoch']
-        bert_base_model.load_state_dict(checkpoint['state_dict'])
+        # checkpoint = torch.load(resume_path)
+        # start_epoch = checkpoint['epoch']
+        # bert_base_model.load_state_dict(checkpoint['state_dict'])
         
 
         self.bert_base_model = bert_base_model
@@ -53,19 +53,24 @@ class BERT_RCNN(nn.Module):
         self.lstm = nn.LSTM(hidden_size,lstm_hidden_size,num_layers=1, dropout=self.dropout, bidirectional=True)
         self.W2 = nn.Linear(2*lstm_hidden_size+hidden_size, lstm_hidden_size)
         self.label = nn.Linear(lstm_hidden_size, output_size)
+        self.maxpool = nn.MaxPool2d((1,4),stride=(1,1)) 
         
     def forward(self,text):
     
-        input = self.bert_base_model(text)
-        # print("INPUT",input.size())
-        input = input.permute(1, 0, 2)
+        input = self.bert_base_model(text) 
+        input = torch.stack(input) ## input.size() = (4,batch_size,num_sequences,hidden_size) because last 4 hidden layers
+        input = input.permute(1, 2, 3,0)
+        input = self.maxpool(input)  ## input.size() = (batch_size,num_sequences,hidden_size,1)
+        input = input.squeeze() ## input.size() = (batch_size,num_sequences,hidden_size)
+        input = input.permute(1,0,2)
+
         h_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
         c_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
 
         output, (final_hidden_state, final_cell_state) = self.lstm(input, (h_0, c_0))
-        # print(output.size())
+
         final_encoding = torch.cat((output, input), 2).permute(1, 0, 2)
-        # print("FINAL ENCODING",final_encoding.size())
+      
         y = self.W2(final_encoding) # y.size() = (batch_size, num_sequences, hidden_size)
         # print("Y",y.size())
         y = y.permute(0, 2, 1) # y.size() = (batch_size, hidden_size, num_sequences)
