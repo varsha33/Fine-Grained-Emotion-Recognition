@@ -1,5 +1,5 @@
 tokenizer = "bert"
-input_type = "speaker+listener"
+input_type = "speaker"
 embedding_type = "bert"
 arch_name = "bert_rcnn"
 

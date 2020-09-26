@@ -48,6 +48,7 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
     model.cuda()
     steps = 0
     model.train()
+    start_train_time = time.time()
     for idx, batch in enumerate(train_iter):
 
         text, target = select_input(batch,config)
@@ -75,8 +76,8 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
         
         steps += 1
         if steps % 100 == 0:
-            print (f'Epoch: {epoch+1:02}, Idx: {idx+1}, Training Loss: {loss.item():.4f}, Training Accuracy: {acc.item(): .2f}%')
-        
+            print (f'Epoch: {epoch+1:02}, Idx: {idx+1}, Training Loss: {loss.item():.4f}, Training Accuracy: {acc.item(): .2f}%, Time taken: {((time.time()-start_train_time)/60): .2f} min')
+            start_train_time = time.time()
         
         total_epoch_loss += loss.item()
         total_epoch_acc += acc.item()
