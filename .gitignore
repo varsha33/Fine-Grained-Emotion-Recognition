@@ -3,3 +3,6 @@
 __pycache__/
 runs/
 save/
+.preprocessed_data/
+bup/
+notes/
