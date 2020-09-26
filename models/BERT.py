@@ -6,9 +6,21 @@ from transformers import BertTokenizer, BertForSequenceClassification,BertModel,
 from torch.autograd import Variable
 from torch.nn import functional as F
 
-
-
 class BERT(nn.Module):
+
+    def __init__(self,batch_size,output_size,hidden_size):
+        super(BERT, self).__init__()
+ 
+        options_name = "bert-base-uncased"
+        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
+
+    def forward(self, text): #here text is utterance based on the input type specified
+
+        text_fea = self.encoder(text,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
+        
+        return text_fea.hidden_states[-1]
+
+class simple_BERT(nn.Module):
 
     def __init__(self,batch_size,output_size,hidden_size):
         super(BERT, self).__init__()
@@ -22,7 +34,46 @@ class BERT(nn.Module):
         
         return text_fea.logits
 
+class BERT_RCNN(nn.Module):
+    
+    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,lstm_hidden_size=128):
+        super(BERT_RCNN, self).__init__()
+        
+        checkpoint = torch.load(resume_path)
+        start_epoch = checkpoint['epoch']
+        bert_base_model.load_state_dict(checkpoint['state_dict'])
+        
 
+        self.bert_base_model = bert_base_model
+        self.batch_size = batch_size
+        self.output_size = output_size
+        self.lstm_hidden_size = lstm_hidden_size
+        
+        self.dropout = 0.8
+        self.lstm = nn.LSTM(hidden_size,lstm_hidden_size,num_layers=1, dropout=self.dropout, bidirectional=True)
+        self.W2 = nn.Linear(2*lstm_hidden_size+hidden_size, lstm_hidden_size)
+        self.label = nn.Linear(lstm_hidden_size, output_size)
+        
+    def forward(self,text):
+    
+        input = self.bert_base_model(text)
+        # print("INPUT",input.size())
+        input = input.permute(1, 0, 2)
+        h_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
+        c_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
+
+        output, (final_hidden_state, final_cell_state) = self.lstm(input, (h_0, c_0))
+        # print(output.size())
+        final_encoding = torch.cat((output, input), 2).permute(1, 0, 2)
+        # print("FINAL ENCODING",final_encoding.size())
+        y = self.W2(final_encoding) # y.size() = (batch_size, num_sequences, hidden_size)
+        # print("Y",y.size())
+        y = y.permute(0, 2, 1) # y.size() = (batch_size, hidden_size, num_sequences)
+        y = F.max_pool1d(y, y.size()[2]) # y.size() = (batch_size, hidden_size, 1)
+        y = y.squeeze(2)
+        logits = self.label(y)
+        # print("LOGITS",logits.size())
+        return logits
 
 class Speaker_Listener_BERT(nn.Module):
 
@@ -44,8 +95,6 @@ class Speaker_Listener_BERT(nn.Module):
         stacked_hidden = self.label(stacked_hidden)
 
         return stacked_hidden
-
-
 
 class Hierarchial_BERT(nn.Module):
 

@@ -1,7 +1,7 @@
 import torch
 
 ## custom
-from models.BERT import BERT
+from models.BERT import BERT,simple_BERT,BERT_RCNN,Speaker_Listener_BERT,Hierarchial_BERT,Hierarchial_BERT_wLSTM
 from models.LSTM import LSTMClassifier
 from models.LSTM_Attn import AttentionModel
 from models.selfAttention import SelfAttention
@@ -18,6 +18,7 @@ def select_model(config,vocab_size=None,word_embeddings=None):
     embedding_length = config.embedding_length
     arch_name = config.arch_name
     output_size = config.output_size
+    bert_resume_path = config.resume_path
 
     if arch_name == "lstm":
         model = LSTMClassifier(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
@@ -36,13 +37,17 @@ def select_model(config,vocab_size=None,word_embeddings=None):
     elif arch_name == "rcnn_attn":
         model = RCNN_attn(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
     elif arch_name == "bert":
-        model = BERT(batch_size,output_size,hidden_size)
+        model = simple_BERT(batch_size,output_size,hidden_size)
     elif arch_name == "sl_bert":
         model = Speaker_Listener_BERT(batch_size,output_size,hidden_size)
     elif arch_name == "h_bert":
         model = Hierarchial_BERT(batch_size,output_size,hidden_size)
     elif arch_name == "h_lstm_bert":
         model = Hierarchial_BERT_wLSTM(batch_size,output_size,hidden_size)
+    elif arch_name == "bert_rcnn":
+        bert_model = BERT(batch_size,output_size,hidden_size)
+        model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size)
+
     print("Loading Model")
     
 
@@ -83,6 +88,8 @@ def select_input(batch,config):
         if arch_name == "h_bert" or arch_name == "h_lstm_bert":
             text = batch["utterance_data_list"]
 
+        if arch_name == "bert_rcnn":
+            text = batch["utterance_data"]
 
         target = batch["emotion"]
         target = torch.Tensor(target)

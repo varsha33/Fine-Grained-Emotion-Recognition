@@ -6,3 +6,4 @@ runs/
 save/
 check_area.py
 notes/
+models/__pycache__/

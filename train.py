@@ -90,7 +90,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
     train_iter,valid_iter,test_iter = data[0],data[1],data[2] # data is a tuple of three iterators
     log_dict = {}
     log_dict["param"] = config.param
-
+    print("Start Training")
     for epoch in range(config.start_epoch,config.nepoch):
     
         ## train and validation
@@ -133,7 +133,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
             patience_flag += 1
 
         ## early stopping
-        if patience_flag == config.patience or epoch == nepoch-1:
+        if patience_flag == config.patience or epoch == config.nepoch-1:
             print(log_dict)
             break
 

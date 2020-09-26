@@ -71,7 +71,7 @@ def eval_model(model, val_iter, loss_fn,config):
             loss = loss_fn(prediction, target)
             
             num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).sum()
-            acc = 100.0 * num_corrects/len(batch)
+            acc = 100.0 * num_corrects/config.batch_size
             total_epoch_loss += loss.item()
             total_epoch_acc += acc.item()
 
@@ -113,6 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('-p','--patience',default=10,type=int,help='Early stopping patience')
 
     args = parser.parse_args()
+
     resume_path = args.resume_path
     mode = args.mode
     rem_epoch = args.rem_epoch
@@ -143,7 +144,7 @@ if __name__ == '__main__':
     print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))
 
     eval_config = edict(log["param"])
-    
+    eval_config.resume_path = resume_path
     model = select_model(eval_config,vocab_size,word_embeddings)
 
     loss_fn = nn.CrossEntropyLoss()
@@ -177,4 +178,4 @@ if __name__ == '__main__':
         
         ## testing
         test_loss, test_acc = eval_model(model, test_iter,loss_fn,eval_config)
-    
+        

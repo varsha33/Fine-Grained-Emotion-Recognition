@@ -1,7 +1,7 @@
 tokenizer = "bert"
 input_type = "speaker+listener"
 embedding_type = "bert"
-arch_name = "bert"
+arch_name = "bert_rcnn"
 
 
 # learning_rate = 0.001 # for models until bert
@@ -33,5 +33,7 @@ param = {"input_type":input_type,"tokenizer":tokenizer,"embedding_type":embeddin
 confusion = False
 per_class = False
 
+#Only for freezing models
+resume_path = "/home/ashvar/varsha/Emotion-Recognition/save/speaker/bert/2020_09_13_18_47_18/model_best.pth.tar"
 
 
