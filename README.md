@@ -2,9 +2,9 @@
 ## Description
 
 ## Requirements
-  * Python==3.6.6
-  * PyTorch==0.4.0
-  * torchtext==0.2.3
+  * Python==3.7.7
+  * PyTorch==1.4.0
+  * torchtext==0.6.0
 
 
 ## Setup
@@ -17,6 +17,9 @@ This application uses Open Source components. You can find the source code of th
 Project: Text-Classification-Pytorch <https://github.com/prakashpandey9/Text-Classification-Pytorch>  
 Copyright (c) 2018 Prakash Pandey  
 License (MIT) <https://github.com/prakashpandey9/Text-Classification-Pytorch/blob/master/LICENSE.txt>
+
+Project: https://github.com/facebookresearch/EmpatheticDialogues
+License <https://github.com/facebookresearch/EmpatheticDialogues/blob/master/LICENSE>
 
 ## References
 

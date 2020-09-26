@@ -1,5 +1,8 @@
-.data/
+bup/
+.preprocessed_data/
 .vector_cache/
 __pycache__/
 runs/
 save/
+check_area.py
+notes/
