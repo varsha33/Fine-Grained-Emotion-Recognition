@@ -7,6 +7,7 @@ import random
 import numpy as np
 from easydict import EasyDict as edict
 import argparse
+from sklearn.metrics import classification_report
 
 ## torch packages
 import torch
@@ -20,18 +21,20 @@ import matplotlib.pyplot as plt
 ## custom
 from select_model_input import select_model,select_input
 import dataset
-from label_dict import emo_label_map,label_emo_map
+from label_dict import emo_label_map,label_emo_map,class_names
 
 torch.manual_seed(0)
 np.random.seed(0)
 random.seed(0)
 torch.backends.cudnn.deterministic = False
 
+
 def eval_model(model, val_iter, loss_fn,config):
 
     confusion = config.confusion
     per_class = config.per_class
-
+    y_true = []
+    y_pred = []
     total_epoch_loss = 0
     total_epoch_acc = 0
 
@@ -71,6 +74,9 @@ def eval_model(model, val_iter, loss_fn,config):
             loss = loss_fn(prediction, target)
             
             num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).sum()
+            y_true.extend(target.data.cpu().tolist())
+            y_pred.extend(torch.max(prediction, 1)[1].view(target.size()).data.cpu().tolist())
+
             acc = 100.0 * num_corrects/config.batch_size
             total_epoch_loss += loss.item()
             total_epoch_acc += acc.item()
@@ -84,6 +90,7 @@ def eval_model(model, val_iter, loss_fn,config):
                 print('Test Accuracy of %5s: %2d%% (%2d/%2d)' % (
                 label_emo_map[i], 100 * class_correct[i] / class_total[i],
                 np.sum(class_correct[i]), np.sum(class_total[i])))
+        print(classification_report(y_true, y_pred, target_names=class_names))
 
     return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter)
 

@@ -23,7 +23,7 @@ class BERT(nn.Module):
 class simple_BERT(nn.Module):
 
     def __init__(self,batch_size,output_size,hidden_size):
-        super(BERT, self).__init__()
+        super(simple_BERT, self).__init__()
  
         options_name = "bert-base-uncased"
         self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
@@ -42,8 +42,7 @@ class BERT_RCNN(nn.Module):
         # checkpoint = torch.load(resume_path)
         # start_epoch = checkpoint['epoch']
         # bert_base_model.load_state_dict(checkpoint['state_dict'])
-        
-
+    
         self.bert_base_model = bert_base_model
         self.batch_size = batch_size
         self.output_size = output_size

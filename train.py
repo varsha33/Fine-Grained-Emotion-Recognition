@@ -5,7 +5,7 @@ import time
 import json
 import random 
 import time
-
+import argparse
 ## torch packages
 import torch
 import torch.nn.functional as F
@@ -126,6 +126,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
             log_dict["test_loss"] = test_loss
             log_dict["valid_loss"] = val_loss
             log_dict["epoch"] = epoch+1
+            log_dict["note"] = note
             
             with open(save_home+"/log.json", 'w') as fp:
                 json.dump(log_dict, fp,indent=4)
@@ -140,7 +141,14 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 
 
 if __name__ == '__main__':
-    
+
+    parser = argparse.ArgumentParser(description='Anything to note specific for this run')
+
+    parser.add_argument('-n','--note',type=str,default='',help='Anything to note specific for this run')
+
+    args = parser.parse_args()
+
+    note = args.n
     ## Loading data
     print('Loading dataset')
     start_time = time.time()

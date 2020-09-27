@@ -43,7 +43,8 @@ def select_model(config,vocab_size=None,word_embeddings=None):
     elif arch_name == "h_bert":
         model = Hierarchial_BERT(batch_size,output_size,hidden_size)
     elif arch_name == "h_lstm_bert":
-        model = Hierarchial_BERT_wLSTM(batch_size,output_size,hidden_size)
+        bert_model = BERT(batch_size,output_size,hidden_size)
+        model = Hierarchial_BERT_wLSTM(bert_resume_path,bert_model,batch_size,output_size,hidden_size)
     elif arch_name == "bert_rcnn":
         bert_model = BERT(batch_size,output_size,hidden_size)
         model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size)

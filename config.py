@@ -1,11 +1,11 @@
 tokenizer = "bert"
 input_type = "speaker"
 embedding_type = "bert"
-arch_name = "bert_rcnn"
+arch_name = "h_lstm_bert"
 
 
 # learning_rate = 0.001 # for models until bert
-learning_rate = 0.000023 # for bert-based models
+learning_rate = 0.00023 # for bert-based models
 
 batch_size = 16
 # batch_size = 64 # for models until bert (128 also works well)

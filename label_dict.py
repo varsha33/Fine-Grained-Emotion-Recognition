@@ -4,3 +4,5 @@ emo_label_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry'
 'content': 24, 'devastated': 25, 'sentimental': 26, 'caring': 27, 'trusting': 28, 'ashamed': 29, 'apprehensive': 30, 'faithful': 31}
 
 label_emo_map =  {v: k for k, v in emo_label_map.items()}
+
+class_names = list(emo_label_map.keys())
