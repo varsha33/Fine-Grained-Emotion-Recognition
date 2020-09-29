@@ -1,7 +1,7 @@
 import torch
 
 ## custom
-from models.BERT import BERT,simple_BERT,BERT_RCNN,Speaker_Listener_BERT,Hierarchial_BERT,Hierarchial_BERT_wLSTM
+from models.BERT import BERT,simple_BERT,BERT_RCNN,Speaker_Listener_BERT,Hierarchial_BERT_SL,Arousal_BERT
 from models.LSTM import LSTMClassifier
 from models.LSTM_Attn import AttentionModel
 from models.selfAttention import SelfAttention
@@ -41,13 +41,15 @@ def select_model(config,vocab_size=None,word_embeddings=None):
     elif arch_name == "sl_bert":
         model = Speaker_Listener_BERT(batch_size,output_size,hidden_size)
     elif arch_name == "h_bert":
-        model = Hierarchial_BERT(batch_size,output_size,hidden_size)
-    elif arch_name == "h_lstm_bert":
         bert_model = BERT(batch_size,output_size,hidden_size)
-        model = Hierarchial_BERT_wLSTM(bert_resume_path,bert_model,batch_size,output_size,hidden_size)
+        model = Hierarchial_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size)
     elif arch_name == "bert_rcnn":
         bert_model = BERT(batch_size,output_size,hidden_size)
         model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size)
+    elif arch_name == "h_bert_sl":
+        model = Hierarchial_BERT_SL(batch_size,output_size,hidden_size)
+    elif arch_name == "a_bert":
+        model = Arousal_BERT(batch_size,output_size,hidden_size)
 
     print("Loading Model")
     
@@ -86,11 +88,13 @@ def select_input(batch,config):
         if arch_name == "sl_bert":
             text = [batch["speaker_idata"],batch["listener_idata"]]
 
-        if arch_name == "h_bert" or arch_name == "h_lstm_bert":
+        if arch_name == "h_bert" or arch_name == "h_bert_sl":
             text = batch["utterance_data_list"]
 
         if arch_name == "bert_rcnn":
             text = batch["utterance_data"]
+        if arch_name == "a_bert":
+            text = [batch["utterance_data"],batch["arousal_utterance"]]
 
         target = batch["emotion"]
         target = torch.Tensor(target)

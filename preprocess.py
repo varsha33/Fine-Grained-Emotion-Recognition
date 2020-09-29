@@ -12,6 +12,8 @@ from transformers import BertTokenizer,AutoTokenizer
 import matplotlib.pyplot as plt
 import collections
 
+## custom packages
+from extract_arousal import get_arousal_vec
 
 emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, 'sad': 5, 'grateful': 6, 'lonely': 7,
     'impressed': 8, 'afraid': 9, 'disgusted': 10, 'confident': 11, 'terrified': 12, 'hopeful': 13, 'anxious': 14, 'disappointed': 15,
@@ -67,7 +69,6 @@ def data_reader(data_folder, datatype,save=True):
             ids.append((prev_utterance_parts[0],prev_utterance_parts[1]))
             speaker_info.append(get_speaker_info(prev_utterance_parts[1]))
             
-
             if i == len(df)-1 : # reaches the end of the dataset and this adds the last utterance to the ongoing utterance list
                 
 
@@ -123,7 +124,9 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_type)
     ## utterance_combined
     tokenized_utterance_dict = tokenizer.batch_encode_plus(processed_data["utterance_data"],return_attention_mask=True)
+
     tokenized_utterance = tokenized_utterance_dict["input_ids"]
+    arousal_utterance  = get_arousal_vec(processed_data["utterance_data"],tokenizer,tokenized_utterance)
     tokenized_utterance_attn = tokenized_utterance_dict["attention_mask"]
     ##speaker_listener
     tokenized_speaker,tokenized_listener, tokenized_inter_speaker, tokenized_inter_listener= [], [], [],[]
@@ -159,6 +162,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 
         if len(val_utterance) % 2 !=0: # get even number of utterances which will be useful if we plan to pad or use variable length input
             tokenized_i.append([0 for i in range(max_list_len)])
+
         tokenized_utterance_list.append(tokenized_i)
 
     print("maximum length of utterance:",max([len(j) for i in tokenized_utterance_list for j in i]))
@@ -166,7 +170,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 
     assert len(tokenized_utterance_list) == len(tokenized_inter_listener) == len(tokenized_inter_listener) == len(tokenized_utterance) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) 
     
-    save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"emotion":processed_data["emotion"]}
+    save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"arousal_utterance":arousal_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"emotion":processed_data["emotion"]}
     
     return save_data
 

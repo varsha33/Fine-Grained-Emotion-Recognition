@@ -6,3 +6,11 @@ emo_label_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry'
 label_emo_map =  {v: k for k, v in emo_label_map.items()}
 
 class_names = list(emo_label_map.keys())
+class_indices = list(range(0,32))
+
+filepath = './.data/nrc_vad/a-scores.txt'
+arousal_dict = {}
+with open(filepath) as fp:
+	for cnt, line in enumerate(fp):
+		arousal_dict[line.split("\t")[0]] = float(line.split("\t")[1].split("\n")[0])
+fp.close()

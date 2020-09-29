@@ -34,6 +34,7 @@ class ED_dataset(Dataset):
         item = {}
         
         item["utterance_data"] = torch.LongTensor(self.data["utterance_data"][index])
+        item["arousal_utterance"] = torch.Tensor(self.data["arousal_utterance"][index])
         item["speaker_data"] = torch.LongTensor(self.data["speaker_data"][index])
         item["listener_data"] = torch.LongTensor(self.data["listener_data"][index])
         item["speaker_idata"] = torch.LongTensor(self.data["speaker_idata"][index])
@@ -50,11 +51,18 @@ class ED_dataset(Dataset):
 
 def collate_fn(data):
 
-    def merge(sequences,N=None):
+    def merge(sequences,N=None,arousal=False):
         lengths = [len(seq) for seq in sequences]
         if N == None:
             N = max(lengths)
-        padded_seqs = torch.zeros(len(sequences),N).long() ## padding index 0
+
+        
+        if arousal:
+            padded_seqs = torch.zeros(len(sequences),N) ## padding index 0.5 (neutral)
+            padded_seqs = torch.add(padded_seqs, 0.5)
+        else:
+            padded_seqs = torch.zeros(len(sequences),N).long() ## padding index 0
+
         for i, seq in enumerate(sequences):
             if not torch.is_tensor(seq):
                 seq = torch.LongTensor(seq)
@@ -85,16 +93,19 @@ def collate_fn(data):
     ## input
     
     u_list_batch,u_list_lengths = merge_utterance_level(item_info["utterance_data_list"],8,153) #153:number found
-    input_batch, input_lengths = merge(item_info['utterance_data'])
-    sinput_batch, input_lengths = merge(item_info['speaker_data'])
-    linput_batch, input_lengths = merge(item_info['listener_data'])
-    si_input_batch, sinput_lengths = merge(item_info['speaker_idata'])
-    li_input_batch,linput_lengths = merge(item_info['listener_idata'])
+    
+    input_batch, input_lengths = merge(item_info['utterance_data'],N=512)
+    ainput_batch, ainput_lengths = merge(item_info['arousal_utterance'],N=512,arousal=True)
+    sinput_batch, sinput_lengths = merge(item_info['speaker_data'])
+    linput_batch, linput_lengths = merge(item_info['listener_data'])
+    si_input_batch, si_input_lengths = merge(item_info['speaker_idata'])
+    li_input_batch,li_input_lengths = merge(item_info['listener_idata'])
    
 
     d = {}
     d["utterance_data_list"] = u_list_batch
     d["utterance_data"] = input_batch
+    d["arousal_utterance"] = ainput_batch
     d["speaker_data"] = sinput_batch
     d["listener_data"] = linput_batch
     d["speaker_idata"] = si_input_batch
@@ -104,10 +115,16 @@ def collate_fn(data):
     return d 
 
 
-def get_dataloader(batch_size,tokenizer,embedding_type):
+def get_dataloader(batch_size,tokenizer,embedding_type,arch_name):
 
     if embedding_type == "bert":
-        if tokenizer == "bert":
+
+        if arch_name == "a_bert":
+            with open('./.preprocessed_data/arousal_dataset_preproc.p', "rb") as f:
+                [data_train,data_test, data_valid] = pickle.load(f)
+            f.close()
+        elif tokenizer == "bert":
+
             with open('./.preprocessed_data/dataset_preproc.p', "rb") as f:
                 [data_train,data_test, data_valid] = pickle.load(f)
             f.close()

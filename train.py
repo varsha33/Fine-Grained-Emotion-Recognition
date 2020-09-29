@@ -58,10 +58,14 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
             continue
 
         if torch.cuda.is_available():
-            text = text.cuda()
+            if config.arch_name == "sl_bert" or config.arch_name == "a_bert":
+                text = [text[0].cuda(),text[1].cuda()]
+            else:
+                text = text.cuda()
             target = target.cuda()
 
         ## model prediction
+        model.zero_grad()  
         optimizer.zero_grad()
         prediction = model(text)
         loss = loss_fn(prediction, target)
@@ -96,11 +100,11 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
     
         ## train and validation
         train_loss, train_acc = train_epoch(model, train_iter, epoch,loss_fn,optimizer,config)
-        val_loss, val_acc = eval_model(model, valid_iter,loss_fn,config)
+        val_loss, val_acc ,val_f1_score= eval_model(model, valid_iter,loss_fn,config)
         print(f'Epoch: {epoch+1:02}, Train Loss: {train_loss:.3f}, Train Acc: {train_acc:.2f}%, Val. Loss: {val_loss:3f}, Val. Acc: {val_acc:.2f}%')
         
         ## testing
-        test_loss, test_acc = eval_model(model, test_iter,loss_fn,config)
+        test_loss, test_acc,test_f1_score = eval_model(model, test_iter,loss_fn,config)
         print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}%')
         
         ## save best model
@@ -122,6 +126,8 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
             log_dict["train_acc"] = train_acc
             log_dict["test_acc"] = test_acc
             log_dict["valid_acc"] = val_acc
+            log_dict["test_f1_score"] = test_f1_score
+            log_dict["valid_f1_score"] = val_f1_score
             log_dict["train_loss"] = train_loss
             log_dict["test_loss"] = test_loss
             log_dict["valid_loss"] = val_loss
@@ -144,15 +150,15 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Anything to note specific for this run')
 
-    parser.add_argument('-n','--note',type=str,default='',help='Anything to note specific for this run')
+    parser.add_argument('-n',type=str,default="",help='Anything to note specific for this run')
 
     args = parser.parse_args()
-
+    
     note = args.n
     ## Loading data
     print('Loading dataset')
     start_time = time.time()
-    vocab_size, word_embeddings,train_iter, valid_iter ,test_iter= dataset.get_dataloader(train_config.batch_size,train_config.tokenizer,train_config.embedding_type)
+    vocab_size, word_embeddings,train_iter, valid_iter ,test_iter= dataset.get_dataloader(train_config.batch_size,train_config.tokenizer,train_config.embedding_type,train_config.arch_name)
     data = (train_iter,valid_iter,test_iter)
     finish_time = time.time()
     print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))

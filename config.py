@@ -1,11 +1,11 @@
 tokenizer = "bert"
-input_type = "speaker"
+input_type = "speaker+listener"
 embedding_type = "bert"
-arch_name = "h_lstm_bert"
+arch_name = "a_bert"
 
 
 # learning_rate = 0.001 # for models until bert
-learning_rate = 0.00023 # for bert-based models
+learning_rate = 2.3e-05 # for bert-based models
 
 batch_size = 16
 # batch_size = 64 # for models until bert (128 also works well)
@@ -34,6 +34,6 @@ confusion = False
 per_class = False
 
 #Only for freezing models
-resume_path = "/home/ashvar/varsha/Emotion-Recognition/save/speaker/bert/2020_09_13_18_47_18/model_best.pth.tar"
+resume_path = "/home/ashvar/varsha/Emotion-Recognition/save/speaker+listener/bert/2020_09_27_19_49_06/model_best.pth.tar"
 
 

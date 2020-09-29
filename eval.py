@@ -7,7 +7,7 @@ import random
 import numpy as np
 from easydict import EasyDict as edict
 import argparse
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report,f1_score
 
 ## torch packages
 import torch
@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 ## custom
 from select_model_input import select_model,select_input
 import dataset
-from label_dict import emo_label_map,label_emo_map,class_names
+from label_dict import emo_label_map,label_emo_map,class_names,class_indices
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -54,7 +54,10 @@ def eval_model(model, val_iter, loss_fn,config):
                 continue
           
             if torch.cuda.is_available():
-                text = text.cuda()
+                if config.arch_name == "sl_bert" or config.arch_name=="a_bert":
+                    text = [text[0].cuda(),text[1].cuda()]
+                else:
+                    text = text.cuda()
                 target = target.cuda()
 
             prediction = model(text)
@@ -90,9 +93,9 @@ def eval_model(model, val_iter, loss_fn,config):
                 print('Test Accuracy of %5s: %2d%% (%2d/%2d)' % (
                 label_emo_map[i], 100 * class_correct[i] / class_total[i],
                 np.sum(class_correct[i]), np.sum(class_total[i])))
-        print(classification_report(y_true, y_pred, target_names=class_names))
+        f1_score_e = f1_score(y_true, y_pred, labels=class_indices,average='macro')
 
-    return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter)
+    return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter),f1_score_e
 
 
 
@@ -104,7 +107,7 @@ def load_model(resume,model,optimizer):
     model.load_state_dict(checkpoint['state_dict'])
     model = model.cuda()
     model.eval()
-    optimizer.load_state_dict(checkpoint['optimizer'])
+    # optimizer.load_state_dict(checkpoint['optimizer'])
 
     return model,optimizer,start_epoch
     
@@ -146,7 +149,7 @@ if __name__ == '__main__':
     ## Loading data
     print('Loading dataset')
     start_time = time.time()
-    vocab_size, word_embeddings,train_iter, valid_iter ,test_iter= dataset.get_dataloader(batch_size,tokenizer,embedding_type)
+    vocab_size, word_embeddings,train_iter, valid_iter ,test_iter= dataset.get_dataloader(batch_size,tokenizer,embedding_type,arch_name)
     finish_time = time.time()
     print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))
 
@@ -184,5 +187,8 @@ if __name__ == '__main__':
         # val_loss, val_acc = eval_model(model, valid_iter,loss_fn,eval_config) ## uncommeent if validation needed
         
         ## testing
-        test_loss, test_acc = eval_model(model, test_iter,loss_fn,eval_config)
-        
+        test_loss, test_acc,f1_score = eval_model(model, test_iter,loss_fn,eval_config)
+        log["f1_score"] = f1_score
+        with open(log_path, 'w') as fp:
+            json.dump(log, fp,indent=4)
+        fp.close()
