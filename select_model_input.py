@@ -19,6 +19,7 @@ def select_model(config,vocab_size=None,word_embeddings=None):
     arch_name = config.arch_name
     output_size = config.output_size
     bert_resume_path = config.resume_path
+    freeze = config.freeze
 
     if arch_name == "lstm":
         model = LSTMClassifier(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
@@ -42,15 +43,16 @@ def select_model(config,vocab_size=None,word_embeddings=None):
         model = Speaker_Listener_BERT(batch_size,output_size,hidden_size)
     elif arch_name == "h_bert":
         bert_model = BERT(batch_size,output_size,hidden_size)
-        model = Hierarchial_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size)
+        model = Hierarchial_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,freeze)
     elif arch_name == "bert_rcnn":
         bert_model = BERT(batch_size,output_size,hidden_size)
-        model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size)
+        model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size,freeze)
     elif arch_name == "h_bert_sl":
-        model = Hierarchial_BERT_SL(batch_size,output_size,hidden_size)
+        bert_model = BERT(batch_size,output_size,hidden_size)
+        model = Hierarchial_BERT_SL(bert_resume_path,bert_model,batch_size,output_size,hidden_size,freeze)
     elif arch_name == "a_bert":
         bert_model = BERT(batch_size,output_size,hidden_size)
-        model = Arousal_BERT(bert_resume_path,bert_model, batch_size,output_size,hidden_size)
+        model = Arousal_BERT(bert_resume_path,bert_model, batch_size,output_size,hidden_size,freeze)
 
     print("Loading Model")
     

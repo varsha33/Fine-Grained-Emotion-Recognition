@@ -34,6 +34,7 @@ confusion = False
 per_class = False
 
 #Only for freezing models
+freeze= True
 resume_path = "/home/ashvar/varsha/Emotion-Recognition/save/speaker+listener/bert/2020_09_27_19_49_06/model_best.pth.tar"
 
 
