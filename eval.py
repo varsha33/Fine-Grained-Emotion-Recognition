@@ -29,6 +29,7 @@ random.seed(0)
 torch.backends.cudnn.deterministic = False
 
 
+
 def eval_model(model, val_iter, loss_fn,config):
 
     confusion = config.confusion
@@ -83,7 +84,7 @@ def eval_model(model, val_iter, loss_fn,config):
             acc = 100.0 * num_corrects/config.batch_size
             total_epoch_loss += loss.item()
             total_epoch_acc += acc.item()
-
+          
         if confusion:
             import seaborn as sns
             sns.heatmap(conf_matrix, annot=True,xticklabels=list(emo_label_map.keys()),yticklabels=list(emo_label_map.keys()))
@@ -93,6 +94,7 @@ def eval_model(model, val_iter, loss_fn,config):
                 print('Test Accuracy of %5s: %2d%% (%2d/%2d)' % (
                 label_emo_map[i], 100 * class_correct[i] / class_total[i],
                 np.sum(class_correct[i]), np.sum(class_total[i])))
+
         f1_score_e = f1_score(y_true, y_pred, labels=class_indices,average='macro')
 
     return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter),f1_score_e

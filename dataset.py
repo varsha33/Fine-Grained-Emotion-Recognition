@@ -41,6 +41,7 @@ class ED_dataset(Dataset):
         item["listener_idata"] = torch.LongTensor(self.data["listener_idata"][index])
         item["emotion"] = self.data["emotion"][index]
         item["utterance_data_list"] = self.data["utterance_data_list"][index]
+        item["utterance_data_str"] = self.data["utterance_data_str"][index]
 
         return item
     
@@ -100,7 +101,7 @@ def collate_fn(data):
     linput_batch, linput_lengths = merge(item_info['listener_data'])
     si_input_batch, si_input_lengths = merge(item_info['speaker_idata'])
     li_input_batch,li_input_lengths = merge(item_info['listener_idata'])
-   
+    
 
     d = {}
     d["utterance_data_list"] = u_list_batch
@@ -111,7 +112,7 @@ def collate_fn(data):
     d["speaker_idata"] = si_input_batch
     d["listener_idata"] = li_input_batch
     d["emotion"] = item_info["emotion"]
-    
+    d["utterance_data_str"] = item_info['utterance_data_str']
     return d 
 
 
@@ -119,15 +120,11 @@ def get_dataloader(batch_size,tokenizer,embedding_type,arch_name):
 
     if embedding_type == "bert":
 
-        if arch_name == "a_bert":
-            with open('./.preprocessed_data/arousal_dataset_preproc.p', "rb") as f:
-                [data_train,data_test, data_valid] = pickle.load(f)
-            f.close()
-        elif tokenizer == "bert":
-
+        if tokenizer == "bert":
             with open('./.preprocessed_data/dataset_preproc.p', "rb") as f:
                 [data_train,data_test, data_valid] = pickle.load(f)
             f.close()
+
         elif tokenizer == "distil_bert":
             with open('./preprocessed_data/distil_dataset_preproc.p', "rb") as f:
                 [data_train,data_test, data_valid] = pickle.load(f)

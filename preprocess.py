@@ -170,7 +170,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 
     assert len(tokenized_utterance_list) == len(tokenized_inter_listener) == len(tokenized_inter_listener) == len(tokenized_utterance) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) 
     
-    save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"arousal_utterance":arousal_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"emotion":processed_data["emotion"]}
+    save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"utterance_data_str":processed_data["utterance_data_list"],"arousal_utterance":arousal_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"emotion":processed_data["emotion"]}
     
     return save_data
 
