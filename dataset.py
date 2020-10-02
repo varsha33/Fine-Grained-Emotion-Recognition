@@ -95,8 +95,8 @@ def collate_fn(data):
     
     u_list_batch,u_list_lengths = merge_utterance_level(item_info["utterance_data_list"],8,153) #153:number found
     
-    input_batch, input_lengths = merge(item_info['utterance_data'],N=512)
-    ainput_batch, ainput_lengths = merge(item_info['arousal_utterance'],N=512,arousal=True)
+    input_batch, input_lengths = merge(item_info['utterance_data'])
+    ainput_batch, ainput_lengths = merge(item_info['arousal_utterance'],arousal=True)
     sinput_batch, sinput_lengths = merge(item_info['speaker_data'])
     linput_batch, linput_lengths = merge(item_info['listener_data'])
     si_input_batch, si_input_lengths = merge(item_info['speaker_idata'])

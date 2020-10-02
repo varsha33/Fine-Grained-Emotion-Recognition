@@ -38,7 +38,7 @@ def load_dataset_glove(test_sen=None):
     if config.tokenizer == "whitespace":
         tokenize = lambda x: x.split()
     elif config.tokenizer == "wordpiece+punkt":
-        tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
         tokenize = lambda x: tokenizer.tokenize(x)
 
     TEXT = data.Field(sequential=True, tokenize=tokenize, lower=True, include_lengths=False, batch_first=True, fix_length=config.max_len)

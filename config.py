@@ -7,7 +7,7 @@ arch_name = "a_bert"
 learning_rate = 0.0001 # for models until bert
 # learning_rate = 2.3e-05 # for bert-based models
 
-batch_size = 16
+batch_size = 2
 # batch_size = 64 # for models until bert (128 also works well)
 output_size = 32
 

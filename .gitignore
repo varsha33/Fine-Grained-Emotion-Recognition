@@ -7,3 +7,5 @@ save/
 check_area.py
 notes/
 models/__pycache__
+captum_test.ipynb
+.ipynb_checkpoints/

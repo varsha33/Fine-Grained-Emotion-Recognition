@@ -7,11 +7,11 @@ from torch.nn import functional as F
 
 class BERT(nn.Module):
 
-    def __init__(self,batch_size,output_size,hidden_size):
+    def __init__(self,batch_size,output_size,hidden_size,grad_check):
         super(BERT, self).__init__()
  
         options_name = "bert-base-uncased"
-        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
+        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
     def forward(self, text): #here text is utterance based on the input type specified
 
@@ -21,12 +21,12 @@ class BERT(nn.Module):
 
 class simple_BERT(nn.Module):
 
-    def __init__(self,batch_size,output_size,hidden_size):
+    def __init__(self,batch_size,output_size,hidden_size,grad_check):
         super(simple_BERT, self).__init__()
  
         options_name = "bert-base-uncased"
-        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
-
+        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
+        
     def forward(self, text): #here text is utterance based on the input type specified
 
         text_fea = self.encoder(text,return_dict=True) # no labels provided, output attention and output hidden states = False
@@ -35,7 +35,7 @@ class simple_BERT(nn.Module):
 
 class Arousal_BERT(nn.Module):
 
-    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,freeze=True,lstm_hidden_size=256):
+    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,grad_check,freeze=True,lstm_hidden_size=256):
         super(Arousal_BERT, self).__init__()
 
         if freeze:
@@ -49,7 +49,7 @@ class Arousal_BERT(nn.Module):
         else:
             ## if not using frozen-bert
             options_name = "bert-base-uncased"
-            self.encoder = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
+            self.encoder = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
         self.batch_size = batch_size
 
@@ -69,7 +69,7 @@ class Arousal_BERT(nn.Module):
 
 class BERT_RCNN(nn.Module):
     
-    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,freeze,lstm_hidden_size=128):
+    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,grad_check,freeze=False,lstm_hidden_size=128):
         super(BERT_RCNN, self).__init__()
     
         
@@ -83,7 +83,7 @@ class BERT_RCNN(nn.Module):
             self.bert_base_model = bert_base_model
         else:
             options_name = "bert-base-uncased"
-            self.bert_base_model = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
+            self.bert_base_model = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
         self.batch_size = batch_size
         self.output_size = output_size
@@ -123,12 +123,12 @@ class BERT_RCNN(nn.Module):
 
 class Speaker_Listener_BERT(nn.Module):
 
-    def __init__(self,batch_size,output_size,hidden_size):
+    def __init__(self,batch_size,output_size,hidden_size,grad_check):
         super(Speaker_Listener_BERT, self).__init__()
         
         options_name = "bert-base-uncased"
-        self.sencoder = BertModel.from_pretrained(options_name,gradient_checkpointing=True) ## Speaker BERT
-        self.lencoder = BertModel.from_pretrained(options_name,gradient_checkpointing=True) ## Listener BERT 
+        self.sencoder = BertModel.from_pretrained(options_name,gradient_checkpointing=grad_check) ## Speaker BERT
+        self.lencoder = BertModel.from_pretrained(options_name,gradient_checkpointing=grad_check) ## Listener BERT 
         self.label = nn.Linear(2*hidden_size,output_size)
 
 
@@ -144,7 +144,7 @@ class Speaker_Listener_BERT(nn.Module):
 
 class Hierarchial_BERT(nn.Module):
 
-    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,lstm_hidden_size=256):
+    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,grad_check,freeze=False,lstm_hidden_size=256):
         super(Hierarchial_BERT, self).__init__()
         
         if freeze:
@@ -156,7 +156,7 @@ class Hierarchial_BERT(nn.Module):
             self.bert_base_model = bert_base_model
         else:
             options_name = "bert-base-uncased"
-            self.bert_base_model = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
+            self.bert_base_model = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
         self.batch_size = batch_size
         self.output_size = output_size
@@ -196,7 +196,7 @@ class Hierarchial_BERT(nn.Module):
    
 
 class Hierarchial_BERT_SL(nn.Module):
-    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,freeze=True):
+    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,grad_check,freeze=False):
 
         super(Hierarchial_BERT_SL,self).__init__()
         if freeze:
@@ -208,7 +208,7 @@ class Hierarchial_BERT_SL(nn.Module):
             self.utterance_encoder = bert_base_model
         else:
             options_name = "bert-base-uncased"
-            self.utterance_encoder = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=True)
+            self.utterance_encoder = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
         self.fc1 = nn.Linear(hidden_size,128) ## 128 heuristically chosen
         self.label = nn.Linear(2*128,output_size)
@@ -228,11 +228,11 @@ class Hierarchial_BERT_SL(nn.Module):
 
 class BERT_MTL(nn.Module):
 
-    def __init__(self,batch_size, output_size, hidden_size):
+    def __init__(self,batch_size, output_size, hidden_size,grad_check):
         super(BERT_MTL, self).__init__()
         
         options_name = "bert-base-uncased"
-        self.encoder = BertForSequenceClassification.from_pretrained(options_name,hidden_size=hidden_size,num_labels=output_size,gradient_checkpointing=True)
+        self.encoder = BertForSequenceClassification.from_pretrained(options_name,hidden_size=hidden_size,num_labels=output_size,gradient_checkpointing=grad_check)
         # print(superelf.encoder.config)
         self.fc1 = nn.Linear(hidden_size,128) # 128 heuristically chosen for the valence head
         self.dropout = nn.Dropout(0.4) 

@@ -11,7 +11,7 @@ from models.CNN import CNN
 from models.RNN import RNN
 from models.RCNN_attn import RCNN_attn
 
-def select_model(config,vocab_size=None,word_embeddings=None):
+def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
 
     batch_size = config.batch_size
     hidden_size = config.hidden_size
@@ -19,7 +19,7 @@ def select_model(config,vocab_size=None,word_embeddings=None):
     arch_name = config.arch_name
     output_size = config.output_size
     bert_resume_path = config.resume_path
-    freeze = config.freeze
+    # freeze = config.freeze
 
     if arch_name == "lstm":
         model = LSTMClassifier(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
@@ -38,21 +38,21 @@ def select_model(config,vocab_size=None,word_embeddings=None):
     elif arch_name == "rcnn_attn":
         model = RCNN_attn(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
     elif arch_name == "bert":
-        model = simple_BERT(batch_size,output_size,hidden_size)
+        model = simple_BERT(batch_size,output_size,hidden_size,grad_check)
     elif arch_name == "sl_bert":
-        model = Speaker_Listener_BERT(batch_size,output_size,hidden_size)
+        model = Speaker_Listener_BERT(batch_size,output_size,hidden_size,grad_check)
     elif arch_name == "h_bert":
-        bert_model = BERT(batch_size,output_size,hidden_size)
-        model = Hierarchial_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,freeze)
+        bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
+        model = Hierarchial_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check)
     elif arch_name == "bert_rcnn":
-        bert_model = BERT(batch_size,output_size,hidden_size)
-        model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size,freeze)
+        bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
+        model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size,grad_check)
     elif arch_name == "h_bert_sl":
-        bert_model = BERT(batch_size,output_size,hidden_size)
-        model = Hierarchial_BERT_SL(bert_resume_path,bert_model,batch_size,output_size,hidden_size,freeze)
+        bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
+        model = Hierarchial_BERT_SL(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check)
     elif arch_name == "a_bert":
         bert_model = BERT(batch_size,output_size,hidden_size)
-        model = Arousal_BERT(bert_resume_path,bert_model, batch_size,output_size,hidden_size,freeze)
+        model = Arousal_BERT(bert_resume_path,bert_model, batch_size,output_size,hidden_size,grad_check)
 
     print("Loading Model")
     
