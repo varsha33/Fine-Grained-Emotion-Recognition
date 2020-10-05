@@ -19,7 +19,7 @@ def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
     arch_name = config.arch_name
     output_size = config.output_size
     bert_resume_path = config.resume_path
-    # freeze = config.freeze
+    freeze = config.freeze
 
     if arch_name == "lstm":
         model = LSTMClassifier(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
@@ -44,6 +44,7 @@ def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
     elif arch_name == "h_bert":
         bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
         model = Hierarchial_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check)
+    elif arch_name == ""
     elif arch_name == "bert_rcnn":
         bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
         model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size,grad_check)
@@ -55,7 +56,7 @@ def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
         model = Arousal_BERT(bert_resume_path,bert_model, batch_size,output_size,hidden_size,grad_check)
 
     print("Loading Model")
-    
+
 
     return model
 
@@ -67,7 +68,7 @@ def select_input(batch,config):
     embedding_type = config.embedding_type
 
     if embedding_type == "glove": #for models until BERT
-        
+
 
         if input_type == "speaker+listener":
             text = batch.utterance_data
@@ -77,7 +78,7 @@ def select_input(batch,config):
             text = batch.prompt
 
         target = batch.emotion
-    
+
     elif embedding_type == "bert":
 
         if arch_name == "bert":
@@ -102,6 +103,6 @@ def select_input(batch,config):
         target = batch["emotion"]
         target = torch.Tensor(target)
 
-    
+
     return text,target
 

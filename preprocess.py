@@ -61,16 +61,16 @@ def data_reader(data_folder, datatype,save=True):
 
         prev_utterance_parts = df[i-1].strip().split(",")
         current_utterance_parts = df[i].strip().split(",")
-        
-        if prev_utterance_parts[0] == current_utterance_parts[0]: #to detect if its the ongoing conversation or the next conversation 
+
+        if prev_utterance_parts[0] == current_utterance_parts[0]: #to detect if its the ongoing conversation or the next conversation
             prev_utterance_str = prev_utterance_parts[5].replace("_comma_", ",") #replace _comma_ for utterance
-            
+
             ongoing_utterance_list.append(prev_utterance_str)
             ids.append((prev_utterance_parts[0],prev_utterance_parts[1]))
             speaker_info.append(get_speaker_info(prev_utterance_parts[1]))
-            
+
             if i == len(df)-1 : # reaches the end of the dataset and this adds the last utterance to the ongoing utterance list
-                
+
 
                 current_utterance_str = current_utterance_parts[5].replace("_comma_", ",") #replace _comma_ for utterance
                 emotion_label_str = current_utterance_parts[2]
@@ -91,12 +91,12 @@ def data_reader(data_folder, datatype,save=True):
 
 
         else:  # condition where it reaches the end of a conversation, so the prev_utterance was part of the previous conversation which is added to the ongoing utterance list
-            
+
             prev_utterance_str = prev_utterance_parts[5].replace("_comma_", ",") #replace _comma_ for utterance
             emotion_label_str = prev_utterance_parts[2]
             prompt_str = prev_utterance_parts[3].replace("_comma_", ",")
             emotion_label_int = emo_map[prev_utterance_parts[2]]
-            
+
 
             ongoing_utterance_list.append(prev_utterance_str)
             ids.append((prev_utterance_parts[0],prev_utterance_parts[1]))
@@ -116,7 +116,7 @@ def data_reader(data_folder, datatype,save=True):
             speaker_info = []
 
     processed_data = {"prompt":data["prompt"],"utterance_data_list":data["utterance_data_list"],"utterance_data":data["utterance_data"],"speaker_info":data["speaker_info"],"emotion":data["emotion"]}
-    
+
     return processed_data
 
 
@@ -146,7 +146,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
                 listener_iutterance.extend(val_speaker)
                 speaker_iutterance.extend([0 for _ in range(len(val_speaker))])
                 listener_utterance.extend(val_speaker)
-        
+
         tokenized_inter_speaker.append(speaker_iutterance+[102])
         tokenized_inter_listener.append(listener_iutterance+[102])
         tokenized_speaker.append(speaker_utterance+[102])
@@ -155,7 +155,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
     tokenized_utterance_list = []
     temp = 0
     for u,val_utterance in enumerate(processed_data["utterance_data_list"]):
-    
+
         tokenized_i = tokenizer.batch_encode_plus(val_utterance,add_special_tokens=True)["input_ids"]
         max_list_len = max([len(i) for i in tokenized_i])
 
@@ -166,32 +166,32 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
         tokenized_utterance_list.append(tokenized_i)
 
     print("maximum length of utterance:",max([len(j) for i in tokenized_utterance_list for j in i]))
- 
 
-    assert len(tokenized_utterance_list) == len(tokenized_inter_listener) == len(tokenized_inter_listener) == len(tokenized_utterance) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) 
-    
+
+    assert len(tokenized_utterance_list) == len(tokenized_inter_listener) == len(tokenized_inter_listener) == len(tokenized_utterance) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"])
+
     save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"utterance_data_str":processed_data["utterance_data_list"],"arousal_utterance":arousal_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"emotion":processed_data["emotion"]}
-    
+
     return save_data
 
 
 if __name__ == '__main__':
-    
+
     parser = argparse.ArgumentParser(description='Enter tokenizer type')
 
     parser.add_argument('-t', default="bert-base-uncased",type=str,
                    help='Enter tokenizer type')
     args = parser.parse_args()
     tokenizer_type = args.t
-    print(tokenizer_type)
+
     train_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","train")
     test_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","test")
     valid_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","valid")
-    
+
     train_save_data = tokenize_data(train_pdata,tokenizer_type)
     test_save_data = tokenize_data(test_pdata,tokenizer_type)
     valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
-    
+
     if tokenizer_type == "bert-base-uncased":
         with open('./.preprocessed_data/dataset_preproc.p', "wb") as f:
             pickle.dump([train_save_data,test_save_data,valid_save_data], f)

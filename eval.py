@@ -57,7 +57,7 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
 
             if (target.size()[0] is not config.batch_size):
                 continue
-          
+
             if torch.cuda.is_available():
                 if config.arch_name == "sl_bert" or config.arch_name=="a_bert":
                     text = [text[0].cuda(),text[1].cuda()]
@@ -76,7 +76,7 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                     for t, p in zip(target.data, pred_ind):
                             conf_matrix[t.long(), p.long()] += 1
 
-                
+
                 if per_class:
                     for i in range(config.batch_size):
                         label = target[i]
@@ -84,7 +84,7 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                         class_total[label] += 1
 
                 loss = loss_fn(prediction, target)
-                
+
                 num_corrects = (pred_ind == target.data).sum()
                 y_true.extend(target.data.cpu().tolist())
                 y_pred.extend(pred_ind.cpu().tolist())
@@ -93,7 +93,7 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                 total_epoch_loss += loss.item()
                 total_epoch_acc += acc.item()
 
-        
+
         if confusion:
             import seaborn as sns
             sns.heatmap(conf_matrix, annot=True,xticklabels=list(emo_label_map.keys()),yticklabels=list(emo_label_map.keys()))
@@ -104,15 +104,15 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                 label_emo_map[i], 100 * class_correct[i] / class_total[i],
                 np.sum(class_correct[i]), np.sum(class_total[i])))
 
-    if mode != "explain": 
+    if mode != "explain":
         f1_score_e = f1_score(y_true, y_pred, labels=class_indices,average='macro')
         return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter),f1_score_e
 
 
 
 def load_model(resume,model,optimizer):
-    
-    
+
+
     checkpoint = torch.load(resume)
     start_epoch = checkpoint['epoch']
     model.load_state_dict(checkpoint['state_dict'])
@@ -121,8 +121,8 @@ def load_model(resume,model,optimizer):
     # optimizer.load_state_dict(checkpoint['optimizer']) ## during retrain TODO
 
     return model,optimizer,start_epoch
-    
-	
+
+
 
 if __name__ == '__main__':
 
@@ -140,12 +140,12 @@ if __name__ == '__main__':
     rem_epoch = args.rem_epoch
     patience = args.patience
 
-    ## Load the resume model parameters  
+    ## Load the resume model parameters
     log_path = resume_path.replace("model_best.pth.tar","log.json")
     with open(log_path,'r') as f:
         log = json.load(f)
     f.close()
-    
+
     ## Initialising parameters
     learning_rate = log["param"]["learning_rate"]
     batch_size = log["param"]["batch_size"]
@@ -183,23 +183,23 @@ if __name__ == '__main__':
         eval_config.nepoch = rem_epoch
         eval_config.confusion = False
         eval_config.per_class = True
-        
+
         data  = (train_iter,valid_iter,test_iter)
         model_run_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
         writer = SummaryWriter('./runs/'+input_type+"/"+arch_name+"/")
         save_home = "./save/"+input_type+"/"+arch_name+"/"+model_run_time
-        
+
         train_model(eval_config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_home)
 
     elif mode == "eval":
-        
+
         print(f'Train Acc: {log["train_acc"]:.3f}%, Valid Acc: {log["valid_acc"]:.3f}%, Test Acc: {log["test_acc"]:.3f}%')
 
         eval_config.confusion = True
         eval_config.per_class = True
 
         # val_loss, val_acc = eval_model(model, valid_iter,loss_fn,eval_config) ## uncommeent if validation needed
-        
+
         ## testing
         test_loss, test_acc,f1_score = eval_model(model, test_iter,loss_fn,eval_config,mode)
         log["f1_score"] = f1_score
@@ -208,7 +208,7 @@ if __name__ == '__main__':
         fp.close()
 
     elif mode == "explain":
-        
+
         print(f'Train Acc: {log["train_acc"]:.3f}%, Valid Acc: {log["valid_acc"]:.3f}%, Test Acc: {log["test_acc"]:.3f}%')
 
         eval_config.confusion = False

@@ -51,10 +51,11 @@ def explain_model(model,binput_ids,btarget,binput_str,bpred_ind,bpred_softmax):
 				device = torch.device("cpu")
 				reference_ids = token_reference.generate_reference(seq_len,device=device).unsqueeze(0)
 				ig =LayerIntegratedGradients(model_explain,model_explain.model.encoder.bert.embeddings)
-				attributions, delta = ig.attribute(input_id,reference_ids,target=target,n_steps=40,return_convergence_delta=True)
+				attributions, delta = ig.attribute(input_id,reference_ids,target=target,n_steps=10,return_convergence_delta=True)
 
 				# print('pred: ', label_emo_map[pred_ind], '(', '%.2f'%pred_softmax, ')', ', delta: ', abs(delta))
 				vis_data_records_ig.append(add_attributions_to_visualizer(attributions,input_str,pred_softmax, pred_ind,target, delta))
 
-	visualization.visualize_text(vis_data_records_ig)
+	if len(vis_data_records_ig) != 0:
+		visualization.visualize_text(vis_data_records_ig)
 	# return vis_data_records_ig
