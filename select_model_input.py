@@ -44,7 +44,9 @@ def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
     elif arch_name == "h_bert":
         bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
         model = Hierarchial_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check)
-    elif arch_name == ""
+    elif arch_name == "hd_bert":
+        bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
+        model = Hierarchial_Deep_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check)
     elif arch_name == "bert_rcnn":
         bert_model = BERT(batch_size,output_size,hidden_size,grad_check)
         model = BERT_RCNN(bert_resume_path,bert_model, batch_size,output_size,hidden_size,grad_check)
@@ -92,11 +94,12 @@ def select_input(batch,config):
         if arch_name == "sl_bert":
             text = [batch["speaker_idata"],batch["listener_idata"]]
 
-        if arch_name == "h_bert" or arch_name == "h_bert_sl":
+        if arch_name == "h_bert" or arch_name == "h_bert_sl" or arch_name == "hd_bert":
             text = batch["utterance_data_list"]
 
         if arch_name == "bert_rcnn":
             text = batch["utterance_data"]
+
         if arch_name     == "a_bert":
             text = [batch["utterance_data"],batch["arousal_utterance"]]
 

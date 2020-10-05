@@ -176,7 +176,7 @@ class Hierarchial_BERT_Deep(nn.Module):
             sentence_encoder_list.append(self.encoder(i).hidden_states[-1])
 
         sentence_encoded = torch.stack(sentence_encoder_list)
-
+        print(sentence_encoded.size())
 
         # input = sentence_encoded.permute(1,0,2)
 
@@ -190,7 +190,7 @@ class Hierarchial_BERT_Deep(nn.Module):
         # output = F.relu(self.fc1(output))
         # # output = F.relu(self.fc2(output))
         # logits = self.label(output)
-        return logits
+        # return logits
 
 
 class Hierarchial_BERT(nn.Module):
