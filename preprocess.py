@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import collections
 
 ## custom packages
-from extract_arousal import get_arousal_vec
+from extract_arousal import get_arousal_vec,get_valence_vec
 
 emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, 'sad': 5, 'grateful': 6, 'lonely': 7,
     'impressed': 8, 'afraid': 9, 'disgusted': 10, 'confident': 11, 'terrified': 12, 'hopeful': 13, 'anxious': 14, 'disappointed': 15,
@@ -129,12 +129,12 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
     arousal_utterance  = get_arousal_vec(processed_data["utterance_data"],tokenizer,tokenized_utterance)
     tokenized_utterance_attn = tokenized_utterance_dict["attention_mask"]
     ##speaker_listener
-    tokenized_speaker,tokenized_listener, tokenized_inter_speaker, tokenized_inter_listener= [], [], [],[]
+    tokenized_speaker,tokenized_listener, tokenized_inter_speaker, tokenized_inter_listener,tokenized_sep_data,arousal_sep_data,valence_sep_data = [], [], [],[],[],[],[]
 
     for u,val_utterance in enumerate(processed_data["utterance_data_list"]):
 
         tokenized_i= tokenizer.batch_encode_plus(val_utterance,add_special_tokens=False)["input_ids"]
-        speaker_utterance,listener_utterance,speaker_iutterance,listener_iutterance = [101],[101],[101],[101]
+        speaker_utterance,listener_utterance,speaker_iutterance,listener_iutterance,utterance_sep= [101],[101],[101],[101],[101]
 
         for s,val_speaker in enumerate(tokenized_i): ## for each speaker
 
@@ -147,13 +147,25 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
                 speaker_iutterance.extend([0 for _ in range(len(val_speaker))])
                 listener_utterance.extend(val_speaker)
 
+            utterance_sep.extend(val_speaker+[102])
+
+        flatten_list = lambda l:[item for sublist in l for item in sublist]
+        arousal_sep = [float(0)]+flatten_list(get_arousal_vec(val_utterance,tokenizer,utterance_sep,add_start=False,add_end=True))
+        valence_sep = [float(0)]+flatten_list(get_valence_vec(val_utterance,tokenizer,utterance_sep,add_start=False,add_end=True))
+
         tokenized_inter_speaker.append(speaker_iutterance+[102])
         tokenized_inter_listener.append(listener_iutterance+[102])
         tokenized_speaker.append(speaker_utterance+[102])
         tokenized_listener.append(listener_utterance+[102])
+        tokenized_sep_data.append(utterance_sep)
+        arousal_sep_data.append(arousal_sep)
+        valence_sep_data.append(valence_sep)
 
     tokenized_utterance_list = []
+    tokenized_turnwise_data = []
     temp = 0
+
+
     for u,val_utterance in enumerate(processed_data["utterance_data_list"]):
 
         tokenized_i = tokenizer.batch_encode_plus(val_utterance,add_special_tokens=True)["input_ids"]
@@ -164,13 +176,13 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
             tokenized_i.append([0 for i in range(max_list_len)])
 
         tokenized_utterance_list.append(tokenized_i)
-
+        tokenized_turnwise_data.append([a+b for a, b in zip(tokenized_i[::2],tokenized_i[1::2])])
     print("maximum length of utterance:",max([len(j) for i in tokenized_utterance_list for j in i]))
 
 
-    assert len(tokenized_utterance_list) == len(tokenized_inter_listener) == len(tokenized_inter_listener) == len(tokenized_utterance) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"])
+    assert len(tokenized_utterance_list) == len(tokenized_turnwise_data) ==len(tokenized_inter_listener) == len(tokenized_inter_listener) == len(tokenized_utterance) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_sep_data) == len(arousal_sep_data)
 
-    save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"utterance_data_str":processed_data["utterance_data_list"],"arousal_utterance":arousal_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"emotion":processed_data["emotion"]}
+    save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"utterance_data_str":processed_data["utterance_data_list"],"arousal_utterance":arousal_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"turnwise_data":tokenized_turnwise_data,"sep_data":tokenized_sep_data,"arousal_sep":arousal_sep_data,"valence_sep":valence_sep_data,"emotion":processed_data["emotion"]}
 
     return save_data
 

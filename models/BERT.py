@@ -1,9 +1,11 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from transformers import BertTokenizer, BertForSequenceClassification,BertModel,DistilBertForSequenceClassification
+from transformers import BertTokenizer, BertForSequenceClassification,BertModel,AlbertForSequenceClassification,DistilBertForSequenceClassification
 from torch.autograd import Variable
 from torch.nn import functional as F
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+
 
 class BERT(nn.Module):
 
@@ -13,9 +15,9 @@ class BERT(nn.Module):
         options_name = "bert-base-uncased"
         self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
-    def forward(self, text): #here text is utterance based on the input type specified
+    def forward(self, text,attn_mask): #here text is utterance based on the input type specified
 
-        text_fea = self.encoder(text,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
+        text_fea = self.encoder(text,attn_mask,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
 
         return text_fea
 
@@ -27,15 +29,17 @@ class simple_BERT(nn.Module):
         options_name = "bert-base-uncased"
         self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
-    def forward(self, text): #here text is utterance based on the input type specified
+    def forward(self, text,attn_mask): #here text is utterance based on the input type specified
 
-        text_fea = self.encoder(text,return_dict=True) # no labels provided, output attention and output hidden states = False
+        text_fea = self.encoder(text,attn_mask,return_dict=True) # no labels provided, output attention and output hidden states = False
 
         return text_fea.logits
 
+
+
 class Arousal_BERT(nn.Module):
 
-    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,grad_check,freeze=True,lstm_hidden_size=256):
+    def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,grad_check,freeze=False,lstm_hidden_size=256):
         super(Arousal_BERT, self).__init__()
 
         if freeze:
@@ -78,30 +82,35 @@ class BERT_RCNN(nn.Module):
             for param in bert_base_model.parameters():
                 param.require_grad = False
 
-            self.bert_base_model = bert_base_model
+            self.encoder = bert_base_model
         else:
-            options_name = "bert-base-uncased"
-            self.bert_base_model = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
+            self.encoder = bert_base_model
+            # options_name = "bert-base-uncased"
+            # self.bert_base_model = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
         self.batch_size = batch_size
         self.output_size = output_size
         self.lstm_hidden_size = lstm_hidden_size
 
-        self.dropout = 0.8
-        self.lstm = nn.LSTM(hidden_size,lstm_hidden_size,num_layers=1, dropout=self.dropout, bidirectional=True)
-        self.W2 = nn.Linear(2*lstm_hidden_size+hidden_size, lstm_hidden_size)
+        self.dropout = nn.Dropout(0.1)
+        self.pooler = nn.Linear(hidden_size,hidden_size)
+        self.lstm = nn.LSTM(hidden_size,lstm_hidden_size,num_layers=1, bidirectional=True)
+        self.W2 = nn.Linear(2*lstm_hidden_size, lstm_hidden_size)
         self.label = nn.Linear(lstm_hidden_size, output_size)
 
 
-    def forward(self,text):
+    def forward(self,text,attn_mask):
 
-        input = self.bert_base_model(text).hidden_states[-1]
+        input = self.encoder(text,attn_mask).hidden_states[-1]
+        # print(input.size())
+        input = self.pooler(input)
+        input = self.dropout(input)
         ## Uncommnet the four lines to take maxpool of the last 4 states and change [-1] to [-4:] in the above line
         # input = torch.stack(input) ## input.size() = (4,batch_size,num_sequences,hidden_size) because last 4 hidden layers
         # input = input.permute(1, 2, 3,0)
         # input = self.maxpool(input)  ## input.size() = (batch_size,num_sequences,hidden_size,1)
         # input = input.squeeze() ## input.size() = (batch_size,num_sequences,hidden_size)
-
+        # print(input.size())
         input = input.permute(1,0,2)
 
         h_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
@@ -109,13 +118,15 @@ class BERT_RCNN(nn.Module):
 
         output, (final_hidden_state, final_cell_state) = self.lstm(input, (h_0, c_0))
 
-        final_encoding = torch.cat((output, input), 2).permute(1, 0, 2)
+        final_encoding = output.permute(1, 0, 2)
 
         y = self.W2(final_encoding) # y.size() = (batch_size, num_sequences, hidden_size)
         y = y.permute(0, 2, 1) # y.size() = (batch_size, hidden_size, num_sequences)
         y = F.max_pool1d(y, y.size()[2]) # y.size() = (batch_size, hidden_size, 1)
         y = y.squeeze(2)
+
         logits = self.label(y)
+
 
         return logits
 
@@ -140,10 +151,10 @@ class Speaker_Listener_BERT(nn.Module):
 
         return stacked_hidden
 
-class Hierarchial_BERT_Deep(nn.Module):
+class Hierarchial_Deep_BERT(nn.Module):
 
     def __init__(self,resume_path,bert_base_model,batch_size,output_size,hidden_size,grad_check,freeze=False,lstm_hidden_size=256):
-        super(Hierarchial_BERT, self).__init__()
+        super(Hierarchial_Deep_BERT, self).__init__()
 
         if freeze:
             checkpoint = torch.load(resume_path)
@@ -153,44 +164,59 @@ class Hierarchial_BERT_Deep(nn.Module):
                 param.require_grad = False
             self.encoder = bert_base_model
         else:
-            self.encoder = bert_base_model
+            options_name = "bert-base-uncased"
+            self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
 
         self.batch_size = batch_size
         self.output_size = output_size
         self.lstm_hidden_size = lstm_hidden_size
         self.hidden_size = hidden_size
+        self.turn_weight = nn.Linear(4,4)
+        self.lstm = nn.LSTM(hidden_size,lstm_hidden_size,num_layers=1)
+        self.proj = nn.Linear(hidden_size,128)
+        self.fc1 = nn.Linear(1224,512)
+        self.label = nn.Linear(512,output_size)
+        self.maxpool = nn.MaxPool2d((1,306),stride=(1,self.hidden_size))
+        self.dropout = nn.Dropout(p=0.3)
+        self.selu = nn.SELU()
+        # self.label = nn.Linear(2*lstm_hidden_size, output_size)
 
 
-        self.dropout = 0.8
-        self.lstm = nn.LSTM(hidden_size,lstm_hidden_size,num_layers=1, bidirectional=True)
-        self.fc1 = nn.Linear(2*lstm_hidden_size,128) ## 256 heuristically chosen
-        # self.fc2 = nn.Linear(256,128) ## 128 heuristically chosen
-        self.label = nn.Linear(128, output_size)
+    def forward(self,text,attn_mask): #here text is utterance_data_list
+
+        logits_list = []
+        for i,val in enumerate(text):
+            input_i = self.encoder(val,attn_mask[i],output_hidden_states=True,return_dict=True)
+
+            logits_list.append(input_i.hidden_states[-1])
 
 
-    def forward(self,text): #here text is utterance_data_list
+        turn_encoder = torch.stack(logits_list)
 
-        sentence_encoder_list = []
-        for i in text:
-            sentence_encoder_list.append(self.encoder(i).hidden_states[-1])
+        turn_encoder = self.maxpool(turn_encoder)
 
-        sentence_encoded = torch.stack(sentence_encoder_list)
-        print(sentence_encoded.size())
+        turn_encoder = turn_encoder.reshape(self.batch_size,-1)
 
-        # input = sentence_encoded.permute(1,0,2)
+        turn_encoder = F.relu(self.fc1(turn_encoder))
 
-        # h_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
-        # c_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
+        turn_encoder = self.dropout(turn_encoder)
 
-        # output, (final_hidden_state, final_cell_state) = self.lstm(input, (h_0, c_0))
-
-        # output = torch.cat((final_hidden_state[0,:,:],final_hidden_state[1,:,:]),1)
-
-        # output = F.relu(self.fc1(output))
-        # # output = F.relu(self.fc2(output))
+        logits = self.label(turn_encoder)
+        # turn_encoder = turn_encoder.permute(0,2,1)
+        # turn_encoder = F.max_pool1d(turn_encoder,turn_encoder.size()[1])
+        # print(turn_encoder.size())
         # logits = self.label(output)
-        # return logits
+        # # turn_encoder = F.relu(self.proj(turn_encoder))
+        # # logits = self.label(turn_encoder)
+        # # turn_encoder = turn_encoder.permute(0,2,1)
+        # # turn_encoder = F.relu(self.turn_weight(turn_encoder))
+        # # turn_encoder = turn_encoder.permute(0,2,1)
+        # # turn_encoder = F.relu(self.proj(turn_encoder))
+        # # turn_encoder = turn_encoder.view(self.batch_size,-1)
+        # # logits = self.label(turn_encoder)
+
+        return logits
 
 
 class Hierarchial_BERT(nn.Module):
@@ -222,11 +248,11 @@ class Hierarchial_BERT(nn.Module):
         self.label = nn.Linear(128, output_size)
 
 
-    def forward(self,text): #here text is utterance_data_list
+    def forward(self,text,attn_mask): #here text is utterance_data_list
 
         sentence_encoder_list = []
-        for i in text:
-            sentence_encoder_list.append(self.encoder(i).hidden_states[-1][:,0,:])
+        for i,val in enumerate(text):
+            sentence_encoder_list.append(self.encoder(val,attn_mask[i]).hidden_states[-1][:,0,:])
 
         sentence_encoded = torch.stack(sentence_encoder_list)
 
@@ -237,12 +263,18 @@ class Hierarchial_BERT(nn.Module):
         c_0 = Variable(torch.zeros(2, self.batch_size, self.lstm_hidden_size).cuda())
 
         output, (final_hidden_state, final_cell_state) = self.lstm(input, (h_0, c_0))
+        output = output.permute(1,0,2)
+        y = self.fc1(output) # y.size() = (batch_size, num_sequences, hidden_size)
+        y = y.permute(0, 2, 1) # y.size() = (batch_size, hidden_size, num_sequences)
+        y = F.max_pool1d(y, y.size()[2]) # y.size() = (batch_size, hidden_size, 1)
+        y = y.squeeze(2)
+        # logits = self.label(y)
 
-        output = torch.cat((final_hidden_state[0,:,:],final_hidden_state[1,:,:]),1)
+        # output = torch.cat((final_hidden_state[0,:,:],final_hidden_state[1,:,:]),1)
 
-        output = F.relu(self.fc1(output))
+        # output = F.relu(self.fc1(output))
         # output = F.relu(self.fc2(output))
-        logits = self.label(output)
+        logits = self.label(y)
         return logits
 
 
@@ -300,3 +332,4 @@ class BERT_MTL(nn.Module):
         valence_logits = self.label(valence_logits)
 
         return text_fea.logits,valence_logits
+

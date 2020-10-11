@@ -22,13 +22,14 @@ from eval import eval_model
 from select_model_input import select_model,select_input
 import dataset
 import config as train_config
+from label_dict import label_emo_map
+
 
 torch.manual_seed(0)
 np.random.seed(0)
 random.seed(0)
 torch.backends.cudnn.deterministic = False
-
-
+torch.set_printoptions(threshold=1000)
 
 def save_checkpoint(state, is_best,filename='checkpoint.pth.tar'):
     torch.save(state,filename)
@@ -51,23 +52,33 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
     start_train_time = time.time()
     for idx, batch in enumerate(train_iter):
 
-        text, target = select_input(batch,config)
+        text, attn, target = select_input(batch,config)
         target = torch.autograd.Variable(target).long()
 
         if (target.size()[0] is not config.batch_size):# One of the batch returned has length different than config.batch_size
             continue
 
+        for i,val in enumerate(batch["utterance_data_str"]):
+
+            # if label_emo_map[batch["emotion"][i]] == "angry" or label_emo_map[batch["emotion"][i]] == "furious":
+            #     print(label_emo_map[batch["emotion"][i]])
+            #     print(batch["utterance_data_str"][i])
         if torch.cuda.is_available():
-            if config.arch_name == "sl_bert" or config.arch_name == "a_bert":
+            if config.arch_name == "sl_bert" or config.arch_name == "a_bert" or config.arch_name == "asep_bert":
                 text = [text[0].cuda(),text[1].cuda()]
+
+            elif config.arch_name == "vasep_bert":
+                text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
+
             else:
                 text = text.cuda()
-            target = target.cuda()
 
+            target = target.cuda()
+            attn = attn.cuda()
         ## model prediction
         model.zero_grad()
         optimizer.zero_grad()
-        prediction = model(text)
+        prediction = model(text,attn)
         loss = loss_fn(prediction, target)
 
         ## evaluation
@@ -105,7 +116,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 
         ## testing
         test_loss, test_acc,test_f1_score = eval_model(model, test_iter,loss_fn,config)
-        print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}%')
+        print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}% Test F1 score: {test_f1_score:.4f}')
 
         ## save best model
         is_best = test_acc > best_acc1

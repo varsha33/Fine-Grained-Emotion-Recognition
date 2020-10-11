@@ -1,13 +1,13 @@
 tokenizer = "bert"
 input_type = "speaker+listener"
 embedding_type = "bert"
-arch_name = "hd_bert"
+arch_name = "asep_bert"
 
 
 # learning_rate = 0.0001 # for models until bert
 learning_rate = 2.3e-05 # for bert-based models
 
-batch_size = 16
+batch_size = 2
 # batch_size = 64 # for models until bert (128 also works well)
 output_size = 32
 
@@ -23,7 +23,7 @@ else:
 
 max_seq_len = 500 # used only for glove embedding type
 
-step_size = 2
+step_size = 20
 start_epoch = 0 # for start training
 nepoch = 20
 patience = 10
@@ -33,8 +33,8 @@ confusion = False
 per_class = False
 
 #Only for freezing models
-freeze=False
-resume_path = "/home/ashvar/varsha/Emotion-Recognition/save/speaker+listener/bert/2020_09_27_19_49_06/model_best.pth.tar"
+freeze = False
+resume_path = "/home/ashvar/varsha/Emotion-Recognition/save/speaker+listener/sep_bert/2020_10_09_12_49_03/model_best.pth.tar"
 
 
 param = {"input_type":input_type,"tokenizer":tokenizer,"embedding_type":embedding_type,"arch_name":arch_name,"learning_rate":learning_rate,"batch_size":batch_size,"hidden_size":hidden_size,"embedding_length":embedding_length,"max_seq_len":max_seq_len,"output_size":output_size,"step_size":step_size,"freeze":False}

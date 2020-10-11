@@ -9,6 +9,10 @@ from easydict import EasyDict as edict
 import argparse
 from sklearn.metrics import classification_report,f1_score
 import pickle
+from torch.utils.tensorboard import SummaryWriter
+
+
+
 ## torch packages
 import torch
 import torch.nn.functional as F
@@ -52,22 +56,26 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
     with torch.no_grad():
         for idx, batch in enumerate(val_iter):
             model = model.cuda()
-            text, target = select_input(batch,config)
+            text, attn,target = select_input(batch,config)
             target = torch.autograd.Variable(target).long()
 
             if (target.size()[0] is not config.batch_size):
                 continue
 
             if torch.cuda.is_available():
-                if config.arch_name == "sl_bert" or config.arch_name=="a_bert":
+                if config.arch_name == "sl_bert" or config.arch_name=="a_bert" or config.arch_name == "asep_bert":
                     text = [text[0].cuda(),text[1].cuda()]
+                elif config.arch_name == "vasep_bert":
+                    text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
                 else:
                     text = text.cuda()
-                target = target.cuda()
 
-            prediction = model(text)
+                target = target.cuda()
+                attn = attn.cuda()
+            prediction = model(text,attn)
             correct = np.squeeze(torch.max(prediction, 1)[1].eq(target.view_as(torch.max(prediction, 1)[1])))
             pred_ind = torch.max(prediction, 1)[1].view(target.size()).data
+
             if mode == "explain":
                 pred_softmax = get_pred_softmax(prediction)
                 explain_model(model,text,target.data,batch["utterance_data_str"],pred_ind,pred_softmax) ## use jupyter-notebook while doing explainations
@@ -115,10 +123,12 @@ def load_model(resume,model,optimizer):
 
     checkpoint = torch.load(resume)
     start_epoch = checkpoint['epoch']
+    # for i,v in checkpoint['state_dict'].items():
+    #     print(i,v.size())
     model.load_state_dict(checkpoint['state_dict'])
     model = model.cuda()
     model.eval()
-    # optimizer.load_state_dict(checkpoint['optimizer']) ## during retrain TODO
+    optimizer.load_state_dict(checkpoint['optimizer']) ## during retrain TODO
 
     return model,optimizer,start_epoch
 
@@ -165,6 +175,7 @@ if __name__ == '__main__':
     print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))
 
     eval_config = edict(log["param"])
+    eval_config.param = log["param"]
     eval_config.resume_path = resume_path
 
     if mode == "explain":
@@ -183,6 +194,7 @@ if __name__ == '__main__':
         eval_config.nepoch = rem_epoch
         eval_config.confusion = False
         eval_config.per_class = True
+        eval_config.start_epoch = start_epoch
 
         data  = (train_iter,valid_iter,test_iter)
         model_run_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
