@@ -63,10 +63,14 @@ def eval_model(model, val_iter,confusion=False,per_class=False):
 
             loss = loss_fn(prediction, target)
             num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).sum()
-
+            pred_ind = torch.max(prediction, 1)[1].view(target.size()).data
             acc = 100.0 * num_corrects/len(batch)
             total_epoch_loss += loss.item()
             total_epoch_acc += acc.item()
+
+            y_true.extend(target.data.cpu().tolist())
+            y_pred.extend(pred_ind.cpu().tolist())
+
         if confusion:
             import seaborn as sns
             sns.heatmap(conf_matrix, annot=True,xticklabels=list(config.emo_label_map.keys()),yticklabels=list(config.emo_label_map.keys()))
@@ -77,7 +81,8 @@ def eval_model(model, val_iter,confusion=False,per_class=False):
                 config.label_emo_map[i], 100 * class_correct[i] / class_total[i],
                 np.sum(class_correct[i]), np.sum(class_total[i])))
 
-    return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter)
+        f1_score_e = f1_score(y_true, y_pred, average='macro')
+    return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter),f1_score_e
 
 def load_model(resume,model,optimizer):
 

@@ -22,6 +22,7 @@ import json
 import config
 import matplotlib.pyplot as plt
 import random
+from sklearn.metrics import f1_score
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -86,6 +87,7 @@ def train_model(model, train_iter, epoch):
 def eval_model(model, val_iter,confusion=False,per_class=False):
     total_epoch_loss = 0
     total_epoch_acc = 0
+    y_pred,y_true = [],[]
     if confusion:
         conf_matrix = torch.zeros(output_size, output_size)
     if per_class:
@@ -123,10 +125,12 @@ def eval_model(model, val_iter,confusion=False,per_class=False):
 
             loss = loss_fn(prediction, target)
             num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).sum()
-
+            pred_ind = torch.max(prediction, 1)[1].view(target.size()).data
             acc = 100.0 * num_corrects/len(batch)
             total_epoch_loss += loss.item()
             total_epoch_acc += acc.item()
+            y_true.extend(target.data.cpu().tolist())
+            y_pred.extend(pred_ind.cpu().tolist())
         if confusion:
             import seaborn as sns
             sns.heatmap(conf_matrix, annot=True,xticklabels=list(config.emo_label_map.keys()),yticklabels=list(config.emo_label_map.keys()))
@@ -136,8 +140,8 @@ def eval_model(model, val_iter,confusion=False,per_class=False):
                 print('Test Accuracy of %5s: %2d%% (%2d/%2d)' % (
                 config.label_emo_map[i], 100 * class_correct[i] / class_total[i],
                 np.sum(class_correct[i]), np.sum(class_total[i])))
-
-    return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter)
+        f1_score_e = f1_score(y_true, y_pred, average='macro')
+    return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter),f1_score_e
 
 def load_model(resume,model,optimizer):
 
@@ -207,10 +211,10 @@ if __name__ == '__main__':
 
     for epoch in range(nepoch):
         train_loss, train_acc = train_model(model, train_iter, epoch)
-        val_loss, val_acc = eval_model(model, valid_iter)
+        val_loss, val_acc,val_f1_score = eval_model(model, valid_iter)
         print(f'Epoch: {epoch+1:02}, Train Loss: {train_loss:.3f}, Train Acc: {train_acc:.2f}%, Val. Loss: {val_loss:3f}, Val. Acc: {val_acc:.2f}%')
-        test_loss, test_acc = eval_model(model, test_iter,confusion=config.confusion,per_class=config.per_class)
-        print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}%')
+        test_loss, test_acc,test_f1_score = eval_model(model, test_iter,confusion=config.confusion,per_class=config.per_class)
+        print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}%, Test F1 Score:{test_f1_score:.4f}')
         is_best = test_acc > best_acc1
         save_checkpoint({'epoch': epoch + 1,'arch': arch_name,'state_dict': model.state_dict(),'test_acc': test_acc,'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
         best_acc1 = max(test_acc, best_acc1)

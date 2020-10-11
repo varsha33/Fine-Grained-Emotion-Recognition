@@ -120,5 +120,5 @@ def extract_data_stats():
 
 if __name__ == '__main__':
 
-    data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","train")
+    data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","test")
     # extract_data_stats()

@@ -33,7 +33,7 @@ patience = 700
 
 # Accuracy display
 confusion = False
-per_class = False
+per_class = True
 
 
 # for eval.py
