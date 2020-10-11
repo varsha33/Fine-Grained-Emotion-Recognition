@@ -29,6 +29,8 @@ TEXT, vocab_size, word_embeddings, train_iter, valid_iter, test_iter = load_data
 def eval_model(model, val_iter,confusion=False,per_class=False):
     total_epoch_loss = 0
     total_epoch_acc = 0
+    y_true = []
+    y_pred = []
     if confusion:
         conf_matrix = torch.zeros(output_size, output_size)
     if per_class:
@@ -78,7 +80,7 @@ def eval_model(model, val_iter,confusion=False,per_class=False):
     return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter)
 
 def load_model(resume,model,optimizer):
-    
+
     # print("=> loading checkpoint '{}'".format(args.resume))
     checkpoint = torch.load(resume)
     start_epoch = checkpoint['epoch']
@@ -88,24 +90,24 @@ def load_model(resume,model,optimizer):
     model.eval()
     optimizer.load_state_dict(checkpoint['optimizer'])
     test_loss, test_acc = eval_model(model, test_iter,confusion=config.confusion,per_class=config.per_class)
-    
-	
+
+
 
 if __name__ == '__main__':
-    
+
     log_path = config.resume.replace("model_best.pth","log.json")
-    
+
     with open(log_path,'r') as f:
         log = json.load(f)
     f.close()
-    
+
     learning_rate = log["param"]["learning_rate"]
     batch_size = log["param"]["batch_size"]
     hidden_size = log["param"]["hidden_size"]
     embedding_length = log["param"]["embedding_length"]
     arch_name = log["param"]["arch_name"]
     output_size = 32
-    
+
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)

@@ -39,16 +39,16 @@ def data_reader(data_folder, datatype,save=True):
 
         prev_utterance_parts = df[i-1].strip().split(",")
         current_utterance_parts = df[i].strip().split(",")
-        
-        if prev_utterance_parts[0] == current_utterance_parts[0]: #to detect if its the ongoing conversation or the next conversation 
+
+        if prev_utterance_parts[0] == current_utterance_parts[0]: #to detect if its the ongoing conversation or the next conversation
             prev_utterance_str = prev_utterance_parts[5].replace("_comma_", ",") #replace _comma_ for utterance
             ongoing_utterance_list.append(prev_utterance_str)
             ids.append((prev_utterance_parts[0],prev_utterance_parts[1]))
             speaker_info.append(get_speaker_info(prev_utterance_parts[1]))
-            
+
 
             if i == len(df)-1 : # reaches the end of the dataset and this adds the last utterance to the ongoing utterance list
-                
+
 
                 current_utterance_str = current_utterance_parts[5].replace("_comma_", ",") #replace _comma_ for utterance
                 emotion_label_str = current_utterance_parts[2]
@@ -70,12 +70,12 @@ def data_reader(data_folder, datatype,save=True):
 
 
         else:  # condition where it reaches the end of a conversation, so the prev_utterance was part of the previous conversation which is added to the ongoing utterance list
-            
+
             prev_utterance_str = prev_utterance_parts[5].replace("_comma_", ",") #replace _comma_ for utterance
             emotion_label_str = prev_utterance_parts[2]
             prompt_str = prev_utterance_parts[3].replace("_comma_", ",")
             emotion_label_int = emo_map[prev_utterance_parts[2]]
-            
+
 
             ongoing_utterance_list.append(prev_utterance_str)
             ids.append((prev_utterance_parts[0],prev_utterance_parts[1]))
@@ -94,7 +94,7 @@ def data_reader(data_folder, datatype,save=True):
             ids = []
             speaker_info = []
 
-    
+
     assert len(data["prompt"]) == len(data["emotion_label"]) == len(data["utterance_data"]) == len(data["utterance_id"]) == len(data["speaker_info"])
 
     save_data = {"prompt":data["prompt"],"emotion":data["emotion"],"utterance_data":data["utterance_data_combined"],"speaker_utterance":data["speaker_utterance"]}
@@ -119,6 +119,6 @@ def extract_data_stats():
 
 
 if __name__ == '__main__':
-    
-    data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","valid")
+
+    data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","train")
     # extract_data_stats()

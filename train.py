@@ -21,7 +21,7 @@ import time
 import json
 import config
 import matplotlib.pyplot as plt
-import random 
+import random
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -43,7 +43,7 @@ def clip_gradient(model, clip_value):
     params = list(filter(lambda p: p.grad is not None, model.parameters()))
     for p in params:
         p.grad.data.clamp_(-clip_value, clip_value)
-    
+
 def train_model(model, train_iter, epoch):
     total_epoch_loss = 0
     total_epoch_acc = 0
@@ -52,7 +52,7 @@ def train_model(model, train_iter, epoch):
     model.train()
     for idx, batch in enumerate(train_iter):
         if input_type == "speaker+listener":
-            text = batch.utterance_data
+            text = batch.utterance
         elif input_type == "speaker":
             text = batch.speaker_data
         elif input_type == "prompt":
@@ -74,13 +74,13 @@ def train_model(model, train_iter, epoch):
         clip_gradient(model, 1e-1)
         optimizer.step()
         steps += 1
-        
+
         if steps % 100 == 0:
             print (f'Epoch: {epoch+1}, Idx: {idx+1}, Training Loss: {loss.item():.4f}, Training Accuracy: {acc.item(): .2f}%')
-        
+
         total_epoch_loss += loss.item()
         total_epoch_acc += acc.item()
-        
+
     return total_epoch_loss/len(train_iter), total_epoch_acc/len(train_iter)
 
 def eval_model(model, val_iter,confusion=False,per_class=False):
@@ -96,7 +96,7 @@ def eval_model(model, val_iter,confusion=False,per_class=False):
     with torch.no_grad():
         for idx, batch in enumerate(val_iter):
             if input_type == "speaker+listener":
-                text = batch.utterance_data
+                text = batch.utterance
             elif input_type == "speaker":
                 text = batch.speaker_data
             elif input_type == "prompt":
@@ -140,7 +140,7 @@ def eval_model(model, val_iter,confusion=False,per_class=False):
     return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter)
 
 def load_model(resume,model,optimizer):
-    
+
     # print("=> loading checkpoint '{}'".format(args.resume))
     checkpoint = torch.load(resume)
     start_epoch = checkpoint['epoch']
@@ -150,10 +150,10 @@ def load_model(resume,model,optimizer):
     model.eval()
     optimizer.load_state_dict(checkpoint['optimizer'])
     test_loss, test_acc = eval_model(model, test_iter,confusion=config.confusion,per_class=config.per_class)
-	
+
 
 if __name__ == '__main__':
-    
+
 
     learning_rate = config.learning_rate
     batch_size = config.batch_size
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     else:
         log_dict["param"] = {"arch_name":arch_name,"lr":learning_rate,"batch_size":batch_size,"max_seq_len":max_seq_len}
 
-    if arch_name == "lstm":   
+    if arch_name == "lstm":
         model = LSTMClassifier(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
     elif arch_name == "selfattn":
         model = SelfAttention(batch_size, output_size, hidden_size, vocab_size, embedding_length, word_embeddings)
@@ -190,20 +190,20 @@ if __name__ == '__main__':
     elif arch_name == "bert":
         model = BERT()
 
-    
+
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,config.step_size, gamma=0.5)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,config.step_size, gamma=0.1)
     best_acc1 = 0
 
-    
+
     patience_flag = 0
     model_run_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
 
     writer = SummaryWriter('./runs/'+input_type+"/"+arch_name+"/")
     save_home = "./save/"+input_type+"/"+arch_name+"/"+model_run_time
     os.makedirs(save_home,exist_ok=True)
-    
+
 
     for epoch in range(nepoch):
         train_loss, train_acc = train_model(model, train_iter, epoch)
@@ -215,7 +215,7 @@ if __name__ == '__main__':
         save_checkpoint({'epoch': epoch + 1,'arch': arch_name,'state_dict': model.state_dict(),'test_acc': test_acc,'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
         best_acc1 = max(test_acc, best_acc1)
         lr_scheduler.step()
-        
+
 
         writer.add_scalar('Loss/train',train_loss,epoch)
         writer.add_scalar('Accuracy/train',train_acc,epoch)
@@ -230,7 +230,7 @@ if __name__ == '__main__':
             log_dict["test_loss"] = test_loss
             log_dict["val_loss"] = val_loss
             log_dict["epoch"] = epoch+1
-            
+
             with open(save_home+"/log.json", 'w') as fp:
                 json.dump(log_dict, fp,indent=4)
             fp.close()
