@@ -24,10 +24,10 @@ class PositionalEncoding(nn.Module):
 
 class TransformerModel(nn.Module):
     def __init__(self, batch_size, output_size, hidden_size, vocab_size, embedding_length, weights,nhead=2,nlayers=1,dropout=0.5):
-    
+
         super(TransformerModel, self).__init__()
         from torch.nn import TransformerEncoder, TransformerEncoderLayer
-        
+
 
         self.batch_size = batch_size
         self.output_size = output_size
@@ -53,7 +53,7 @@ class TransformerModel(nn.Module):
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         return mask
 
-    def forward(self, input_sentences):
+    def forward(self, input_sentences,attn_mask):
 
         input_sentences = input_sentences.transpose(0,1) # as seq_len is the first dimension expected (seq_len,batch_size,embedding_len)
 
@@ -62,19 +62,19 @@ class TransformerModel(nn.Module):
             mask = self._generate_square_subsequent_mask(len(input_sentences)).to(device)
             self.input_mask = mask
 
-        
+
         input = self.word_embeddings(input_sentences) * math.sqrt(self.embedding_length)
-        
+
         input = self.pos_encoder(input)
         # (seq_len, batch_size,embedding_len) , mask: (seq_len, embedding_len)
         output = self.transformer_encoder(input, self.input_mask)
-        # (seq_len, batch_size,embedding_len) 
+        # (seq_len, batch_size,embedding_len)
         output = output.transpose(0,1)
         # (batch_size,seq_len,embedding_len)
         output = output.permute(0, 2, 1) # y.size() = (batch_size, embedding_len, seq_len)
         output = F.max_pool1d(output, output.size()[2]) # y.size() = (batch_size, embedding_len, 1)
         output = output.squeeze(2) # (batch_size, embedding_len)
-        
+
         # output = output[:,0,:] # only the first output
 
         return self.label(output)

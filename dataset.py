@@ -1,5 +1,4 @@
 ## Taken and modified from https://github.com/HLTCHKUST/MoEL.git
-
 import os
 import sys
 import numpy as np
@@ -21,6 +20,8 @@ np.random.seed(0)
 random.seed(0)
 torch.backends.cudnn.deterministic = False
 torch.set_printoptions(threshold=1000)
+
+
 class ED_dataset(Dataset):
 
     def __init__(self,data):
@@ -33,19 +34,24 @@ class ED_dataset(Dataset):
 
         item = {}
 
+        item["utterance_data_str"] = self.data["utterance_data_str"][index]
         item["utterance_data"] = torch.LongTensor(self.data["utterance_data"][index])
-        item["arousal_utterance"] = torch.Tensor(self.data["arousal_utterance"][index])
+
+        item["arousal_data"] = torch.Tensor(self.data["arousal_data"][index])
+        item["valence_data"] = torch.Tensor(self.data["valence_data"][index])
+
         item["speaker_data"] = torch.LongTensor(self.data["speaker_data"][index])
         item["listener_data"] = torch.LongTensor(self.data["listener_data"][index])
         item["speaker_idata"] = torch.LongTensor(self.data["speaker_idata"][index])
         item["listener_idata"] = torch.LongTensor(self.data["listener_idata"][index])
-        item["emotion"] = self.data["emotion"][index]
+
+
         item["utterance_data_list"] = self.data["utterance_data_list"][index]
-        item["turnwise_data"] = self.data["turnwise_data"][index]
-        item["utterance_data_str"] = self.data["utterance_data_str"][index]
-        item["sep_data"] = torch.LongTensor(self.data["sep_data"][index])
-        item["arousal_sep"] = torch.Tensor(self.data["arousal_sep"][index])
-        item["valence_sep"] = torch.Tensor(self.data["valence_sep"][index])
+        item["turn_data"] = self.data["turn_data"][index]
+
+        item["glove_data"] = torch.LongTensor(self.data["glove_data"][index])
+
+        item["emotion"] = self.data["emotion"][index]
 
         return item
 
@@ -56,17 +62,16 @@ class ED_dataset(Dataset):
 
 def collate_fn(data):
 
-    def merge(sequences,N=None,arousal=False):
+    def merge(sequences,N=None,lexicon=False):
         lengths = [len(seq) for seq in sequences]
         if N == None:
             N = max(lengths)
-        if arousal:
-            padded_seqs = torch.zeros(len(sequences),N) ## padding index 0.5 (neutral)
-            attention_mask = torch.zeros(len(sequences),N).long()
+        if lexicon:
+            padded_seqs = torch.zeros(len(sequences),N) ## padding index 0, but float
         else:
             padded_seqs = torch.zeros(len(sequences),N).long() ## padding index 0
-            attention_mask = torch.zeros(len(sequences),N).long()
 
+        attention_mask = torch.zeros(len(sequences),N).long()
         for i, seq in enumerate(sequences):
             if not torch.is_tensor(seq):
                 seq = torch.LongTensor(seq)
@@ -101,69 +106,73 @@ def collate_fn(data):
 
     ## input
 
-    u_list_batch,u_list_attn,u_list_lengths = merge_utterance_level(item_info["utterance_data_list"],8,153) #153:number found
-    tu_list_batch,tu_list_attn,tu_list_lengths = merge_utterance_level(item_info["turnwise_data"],4,306) #153:number found
+    u_list_batch,u_list_attn_mask,u_list_lengths = merge_utterance_level(item_info["utterance_data_list"],8,153) #153,8 :max number found
+    tu_list_batch,tu_list_attn_mask,tu_list_lengths = merge_utterance_level(item_info["turn_data"],4,306) #153*2,4 :max number found
 
-    input_batch,input_attn, input_lengths = merge(item_info['utterance_data'])
-    ainput_batch, ainput_attn,ainput_lengths = merge(item_info['arousal_utterance'],arousal=True)
-    sinput_batch,sinput_attn, sinput_lengths = merge(item_info['speaker_data'])
-    linput_batch, linput_attn,linput_lengths = merge(item_info['listener_data'])
-    si_input_batch,_, si_input_lengths = merge(item_info['speaker_idata'])
-    li_input_batch,_,li_input_lengths = merge(item_info['listener_idata'])
-    sep_input_batch,sep_input_attn,sep_input_lengths = merge(item_info["sep_data"])
-    asep_input_batch,asep_input_attn,asep_input_lengths = merge(item_info["arousal_sep"],N=512,arousal=True)
-    vsep_input_batch,vsep_input_attn,vsep_input_lengths = merge(item_info["valence_sep"],N=512,arousal=True)
+    input_batch,input_attn_mask, input_lengths = merge(item_info['utterance_data'])
+
+    ainput_batch,_,ainput_lengths = merge(item_info['arousal_data'],N=512,lexicon=True)
+    vinput_batch,_,vinput_lengths = merge(item_info['valence_data'],N=512,lexicon=True)
+
+    sinput_batch, sinput_attn_mask, sinput_lengths = merge(item_info['speaker_data'])
+    linput_batch, linput_attn_mask, linput_lengths = merge(item_info['listener_data'])
+
+    si_input_batch, _ , si_input_lengths = merge(item_info['speaker_idata'])
+    li_input_batch, _ ,li_input_lengths = merge(item_info['listener_idata'])
+
+    glove_input_batch,_,glove_input_lengths = merge(item_info["glove_data"],N=512)
 
     d = {}
     d["utterance_data_list"] = u_list_batch
-    d["utterance_data_list_attn"] = u_list_attn
-    d["sep_data"] = sep_input_batch
-    d["sep_data_attn"] =sep_input_attn
-    d["arousal_sep"] = asep_input_batch
-    d["valence_sep"] = vsep_input_batch
-    d["arousal_sep_attn"] =asep_input_attn
-    d["turnwise_data"] = tu_list_batch
-    d["turnwise_data_attn"] = tu_list_attn
+    d["utterance_data_list_attn_mask"] = u_list_attn_mask
+
+
+    d["arousal_data"] = ainput_batch
+    d["valence_data"] = vinput_batch
+
+    d["turn_data"] = tu_list_batch
+    d["turn_data_attn_mask"] = tu_list_attn_mask
+
     d["utterance_data"] = input_batch
-    d["utterance_data_attn"] = input_attn
-    d["arousal_utterance"] = ainput_batch
+    d["utterance_data_attn_mask"] = input_attn_mask
+
     d["speaker_data"] = sinput_batch
-    d["speaker_data_attn"] = sinput_attn
+    d["speaker_data_attn_mask"] = sinput_attn_mask
     d["listener_data"] = linput_batch
-    d["listener_data_attn"] = linput_attn
+    d["listener_data_attn_mask"] = linput_attn_mask
+
     d["speaker_idata"] = si_input_batch
     d["listener_idata"] = li_input_batch
+
+    ##TODO
+    # d["speaker_idata_attn_mask"] = si_input_attn_mask
+    # d["listener_idata_attn_mask"] = li_input_attn_mask
+
     d["emotion"] = item_info["emotion"]
     d["utterance_data_str"] = item_info['utterance_data_str']
+
+    d["glove_data"] = glove_input_batch
+
     return d
 
 
 def get_dataloader(batch_size,tokenizer,embedding_type,arch_name):
 
-    if embedding_type == "bert":
+    if embedding_type == "bert" or embedding_type == "glove":
 
         if tokenizer == "bert":
             with open('./.preprocessed_data/dataset_preproc.p', "rb") as f:
-                [data_train,data_test, data_valid] = pickle.load(f)
-            f.close()
-
-        elif tokenizer == "distil_bert":
-            with open('./preprocessed_data/distil_dataset_preproc.p', "rb") as f:
-                [data_train,data_test, data_valid] = pickle.load(f)
+                [data_train,data_test, data_valid,vocab_size,word_embeddings] = pickle.load(f)
             f.close()
 
         dataset = ED_dataset(data_train)
         train_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=True,collate_fn=collate_fn,num_workers=0)
 
         dataset = ED_dataset(data_test)
-        test_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=True,collate_fn=collate_fn,num_workers=0)
+        test_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=False,collate_fn=collate_fn,num_workers=0)
 
         dataset = ED_dataset(data_valid)
-        valid_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=True,collate_fn=collate_fn,num_workers=0)
+        valid_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=False,collate_fn=collate_fn,num_workers=0)
 
-        return None, None, train_iter, valid_iter, test_iter  #vocab size and embedding size is not required for this
-
-    elif embedding_type == "glove":
-
-        return get_glove_embedding()
+        return vocab_size,word_embeddings, train_iter, valid_iter, test_iter
 

@@ -21,10 +21,10 @@ class SelfAttention(nn.Module):
 		hidden_sie : Size of the hidden_state of the LSTM
 		vocab_size : Size of the vocabulary containing unique words
 		embedding_length : Embeddding dimension of GloVe word embeddings
-		weights : Pre-trained GloVe word_embeddings which we will use to create our word_embedding look-up table 
-		
+		weights : Pre-trained GloVe word_embeddings which we will use to create our word_embedding look-up table
+
 		--------
-		
+
 		"""
 
 		self.batch_size = batch_size
@@ -48,9 +48,9 @@ class SelfAttention(nn.Module):
 
 		"""
 		Now we will use self attention mechanism to produce a matrix embedding of the input sentence in which every row represents an
-		encoding of the input sentence but giving an attention to a specific part of the sentence. We will use 30 such embedding of 
-		the input sentence and then finally we will concatenate all the 30 sentence embedding vectors and connect it to a fully 
-		connected layer of size 2000 which will be connected to the output layer of size 2 returning logits for our two classes i.e., 
+		encoding of the input sentence but giving an attention to a specific part of the sentence. We will use 30 such embedding of
+		the input sentence and then finally we will concatenate all the 30 sentence embedding vectors and connect it to a fully
+		connected layer of size 2000 which will be connected to the output layer of size 2 returning logits for our two classes i.e.,
 		pos & neg.
 
 		Arguments
@@ -72,18 +72,18 @@ class SelfAttention(nn.Module):
 
 		return attn_weight_matrix
 
-	def forward(self, input_sentences, batch_size=None):
+	def forward(self, input_sentences, attn_mask,batch_size=None):
 
-		""" 
+		"""
 		Parameters
 		----------
 		input_sentence: input_sentence of shape = (batch_size, num_sequences)
 		batch_size : default = None. Used only for prediction on a single sentence after training (batch_size = 1)
-		
+
 		Returns
 		-------
 		Output of the linear layer containing logits for pos & neg class.
-		
+
 		"""
 
 		input = self.word_embeddings(input_sentences)
@@ -94,7 +94,7 @@ class SelfAttention(nn.Module):
 		else:
 			h_0 = Variable(torch.zeros(2, batch_size, self.hidden_size).cuda())
 			c_0 = Variable(torch.zeros(2, batch_size, self.hidden_size).cuda())
-		
+
 		output, (h_n, c_n) = self.bilstm(input, (h_0, c_0))
 		output = output.permute(1, 0, 2)
 		# output.size() = (batch_size, num_seq, 2*hidden_size)

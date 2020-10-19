@@ -13,7 +13,9 @@ import matplotlib.pyplot as plt
 import collections
 
 ## custom packages
-from extract_arousal import get_arousal_vec,get_valence_vec
+from extract_lexicon import get_arousal_vec,get_valence_vec
+from utils import flatten_list
+from embedding import get_glove_vec,get_glove_embedding
 
 emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, 'sad': 5, 'grateful': 6, 'lonely': 7,
     'impressed': 8, 'afraid': 9, 'disgusted': 10, 'confident': 11, 'terrified': 12, 'hopeful': 13, 'anxious': 14, 'disappointed': 15,
@@ -122,67 +124,62 @@ def data_reader(data_folder, datatype,save=True):
 
 def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_type)
-    ## utterance_combined
-    tokenized_utterance_dict = tokenizer.batch_encode_plus(processed_data["utterance_data"],return_attention_mask=True)
 
-    tokenized_utterance = tokenized_utterance_dict["input_ids"]
-    arousal_utterance  = get_arousal_vec(processed_data["utterance_data"],tokenizer,tokenized_utterance)
-    tokenized_utterance_attn = tokenized_utterance_dict["attention_mask"]
-    ##speaker_listener
-    tokenized_speaker,tokenized_listener, tokenized_inter_speaker, tokenized_inter_listener,tokenized_sep_data,arousal_sep_data,valence_sep_data = [], [], [],[],[],[],[]
-
-    for u,val_utterance in enumerate(processed_data["utterance_data_list"]):
+    tokenized_inter_speaker, tokenized_inter_listener = [],[]
+    tokenized_total_data,tokenized_speaker,tokenized_listener = [],[],[]
+    tokenized_list_data,tokenized_turn_data = [],[]
+    arousal_data,valence_data = [],[]
+    glove_data = []
+    for u,val_utterance in enumerate(processed_data["utterance_data_list"]): #val utterance is one conversation which has multiple utterances
 
         tokenized_i= tokenizer.batch_encode_plus(val_utterance,add_special_tokens=False)["input_ids"]
-        speaker_utterance,listener_utterance,speaker_iutterance,listener_iutterance,utterance_sep= [101],[101],[101],[101],[101]
 
-        for s,val_speaker in enumerate(tokenized_i): ## for each speaker
+        speaker_utterance,listener_utterance,speaker_iutterance,listener_iutterance,total_utterance = [101],[101],[101],[101],[101]
 
-            if s%2 == 0: # when speaker is the "speaker"
-                speaker_iutterance.extend(val_speaker)
-                listener_iutterance.extend([0 for _ in range(len(val_speaker))])
-                speaker_utterance.extend(val_speaker)
+        total_utterance_list = []
+        glove_vec = []
+
+        for s,val_speaker in enumerate(tokenized_i): ## for each utterance inside a conversation
+
+            if s%2 == 0: # when person is the "speaker"
+                speaker_utterance.extend(val_speaker+[102])
+                speaker_iutterance.extend(val_speaker+[102])
+                listener_iutterance.extend([0 for _ in range(len(val_speaker))]+[102])
+    #
             else:
-                listener_iutterance.extend(val_speaker)
-                speaker_iutterance.extend([0 for _ in range(len(val_speaker))])
-                listener_utterance.extend(val_speaker)
+                listener_utterance.extend(val_speaker+[102])
+                listener_iutterance.extend(val_speaker+[102])
+                speaker_iutterance.extend([0 for _ in range(len(val_speaker))]+[102])
 
-            utterance_sep.extend(val_speaker+[102])
+            total_utterance.extend(val_speaker+[102])
+            total_utterance_list.append(val_speaker+[102])
+            glove_vec.extend(get_glove_vec(val_utterance[s]))
 
-        flatten_list = lambda l:[item for sublist in l for item in sublist]
-        arousal_sep = [float(0)]+flatten_list(get_arousal_vec(val_utterance,tokenizer,utterance_sep,add_start=False,add_end=True))
-        valence_sep = [float(0)]+flatten_list(get_valence_vec(val_utterance,tokenizer,utterance_sep,add_start=False,add_end=True))
+        turn_data = [[101]+a+b for a, b in zip(total_utterance_list[::2],total_utterance_list[1::2])] # turnwise data, [[s1],[l1],[s2],[l2],..] --> [[s1;l1],[s2;l2],..]
 
-        tokenized_inter_speaker.append(speaker_iutterance+[102])
-        tokenized_inter_listener.append(listener_iutterance+[102])
-        tokenized_speaker.append(speaker_utterance+[102])
-        tokenized_listener.append(listener_utterance+[102])
-        tokenized_sep_data.append(utterance_sep)
-        arousal_sep_data.append(arousal_sep)
-        valence_sep_data.append(valence_sep)
+        total_utterance_list = [[101]+i for i in total_utterance_list] #appending 101 to every utterance start
 
-    tokenized_utterance_list = []
-    tokenized_turnwise_data = []
-    temp = 0
+        arousal_vec = get_arousal_vec(tokenizer,total_utterance)
+        valence_vec = get_valence_vec(tokenizer,total_utterance)
 
+        tokenized_inter_speaker.append(speaker_iutterance)
+        tokenized_inter_listener.append(listener_iutterance)
 
-    for u,val_utterance in enumerate(processed_data["utterance_data_list"]):
+        tokenized_speaker.append(speaker_utterance)
+        tokenized_listener.append(listener_utterance)
+        tokenized_total_data.append(total_utterance)
 
-        tokenized_i = tokenizer.batch_encode_plus(val_utterance,add_special_tokens=True)["input_ids"]
-        max_list_len = max([len(i) for i in tokenized_i])
+        tokenized_list_data.append(total_utterance_list)
+        tokenized_turn_data.append(turn_data)
 
+        arousal_data.append(arousal_vec)
+        valence_data.append(valence_vec)
 
-        if len(val_utterance) % 2 !=0: # get even number of utterances which will be useful if we plan to pad or use variable length input
-            tokenized_i.append([0 for i in range(max_list_len)])
+        glove_data.append(glove_vec)
 
-        tokenized_utterance_list.append(tokenized_i)
-        tokenized_turnwise_data.append([a+b for a, b in zip(tokenized_i[::2],tokenized_i[1::2])])
-    print("maximum length of utterance:",max([len(j) for i in tokenized_utterance_list for j in i]))
+    assert len(tokenized_list_data) == len(tokenized_turn_data) ==len(tokenized_inter_speaker) == len(tokenized_inter_listener) == len(tokenized_total_data) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_total_data) == len(arousal_data) == len(valence_data) == len(glove_data)
 
-
-    assert len(tokenized_utterance_list) == len(tokenized_turnwise_data) ==len(tokenized_inter_listener) == len(tokenized_inter_listener) == len(tokenized_utterance) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_sep_data) == len(arousal_sep_data)
-
-    save_data = {"utterance_data_list":tokenized_utterance_list,"utterance_data":tokenized_utterance,"utterance_data_str":processed_data["utterance_data_list"],"arousal_utterance":arousal_utterance,"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"turnwise_data":tokenized_turnwise_data,"sep_data":tokenized_sep_data,"arousal_sep":arousal_sep_data,"valence_sep":valence_sep_data,"emotion":processed_data["emotion"]}
+    save_data = {"utterance_data_list":tokenized_list_data,"utterance_data":tokenized_total_data,"utterance_data_str":processed_data["utterance_data_list"],"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"turn_data":tokenized_turn_data,"arousal_data":arousal_data,"valence_data":valence_data,"glove_data":glove_data,"emotion":processed_data["emotion"]}
 
     return save_data
 
@@ -204,14 +201,12 @@ if __name__ == '__main__':
     test_save_data = tokenize_data(test_pdata,tokenizer_type)
     valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
 
-    if tokenizer_type == "bert-base-uncased":
-        with open('./.preprocessed_data/dataset_preproc.p', "wb") as f:
-            pickle.dump([train_save_data,test_save_data,valid_save_data], f)
-            print("Saved PICKLE")
-    elif tokenizer_type == "distilbert-base-uncased":
-        with open('./.preprocessed_data/distil_dataset_preproc.p', "wb") as f:
-            pickle.dump([train_save_data,test_save_data,valid_save_data], f)
-            print("Saved PICKLE")
+    glove_vocab_size, glove_word_embeddings = get_glove_embedding()
+
+    with open('./.preprocessed_data/dataset_preproc.p', "wb") as f:
+        pickle.dump([train_save_data,test_save_data,valid_save_data,glove_vocab_size,glove_word_embeddings], f)
+        print("Saved PICKLE")
+
 
 
 

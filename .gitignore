@@ -1,5 +1,4 @@
 bup/
-.preprocessed_data/
 .vector_cache/
 __pycache__/
 runs/
@@ -9,3 +8,8 @@ notes/
 models/__pycache__
 captum_test.ipynb
 .ipynb_checkpoints/
+*.out
+xai_emo_rec.py
+*.ipynb
+comparison.py
+results/

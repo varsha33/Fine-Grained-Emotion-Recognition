@@ -1,17 +1,17 @@
 tokenizer = "bert"
 input_type = "speaker+listener"
 embedding_type = "bert"
-arch_name = "asep_bert"
+arch_name = "a_bert"
 
 
-# learning_rate = 0.0001 # for models until bert
+# learning_rate = 0.001 # for models until bert
 learning_rate = 2.3e-05 # for bert-based models
 
-batch_size = 2
-# batch_size = 64 # for models until bert (128 also works well)
+batch_size = 20
+# batch_size = 64 # for models until bert
 output_size = 32
 
-# hidden_size = 128 # for models until bert (256 also works well)
+# hidden_size = 128 # for models until bert
 hidden_size = 768 # for bert-based models, cannot change as fine-tuning
 
 
@@ -21,16 +21,16 @@ else:
 	embedding_length = 200 # used only for glove embedding type
 
 
-max_seq_len = 500 # used only for glove embedding type
+max_seq_len = 512 # used only for glove embedding type
 
-step_size = 20
+step_size = 3
 start_epoch = 0 # for start training
-nepoch = 20
+nepoch = 30
 patience = 10
 
 # Accuracy display
-confusion = False
-per_class = False
+confusion = False #confusion matrix
+per_class = False # per class accuracy
 
 #Only for freezing models
 freeze = False
