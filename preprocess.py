@@ -194,17 +194,18 @@ if __name__ == '__main__':
     tokenizer_type = args.t
 
     train_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","train")
-    test_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","test")
     valid_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","valid")
+    test_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","test")
 
     train_save_data = tokenize_data(train_pdata,tokenizer_type)
-    test_save_data = tokenize_data(test_pdata,tokenizer_type)
     valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
+    test_save_data = tokenize_data(test_pdata,tokenizer_type)
+
 
     glove_vocab_size, glove_word_embeddings = get_glove_embedding()
 
     with open('./.preprocessed_data/dataset_preproc.p', "wb") as f:
-        pickle.dump([train_save_data,test_save_data,valid_save_data,glove_vocab_size,glove_word_embeddings], f)
+        pickle.dump([train_save_data, valid_save_data, test_save_data, glove_vocab_size,glove_word_embeddings], f)
         print("Saved PICKLE")
 
 

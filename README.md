@@ -1,26 +1,23 @@
 # Emotion Recognition
-## Description
-
-## Requirements
-  * Python==3.7.7
-  * PyTorch==1.4.0
 
 ## Setup
 
 For training the model, go to config.py to set the required parameters 
 
 ```
-
 python train.py
-
 ```
 For evalutaion run the below code with "eval" mode. The other modes are "retrain" and "explain" which are in progress.
 
 ```
-
 python eval.py -r <model path> -m <mode>
-
 ```
+
+## Requirements
+  * Python 3.7.7
+  * PyTorch 1.4.0
+
+
 ## Credits
 
 This application uses Open Source components. You can find the source code of their open source projects along with license information below. We acknowledge and are grateful to these developers for their contributions to open source.

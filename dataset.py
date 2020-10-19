@@ -162,17 +162,18 @@ def get_dataloader(batch_size,tokenizer,embedding_type,arch_name):
 
         if tokenizer == "bert":
             with open('./.preprocessed_data/dataset_preproc.p', "rb") as f:
-                [data_train,data_test, data_valid,vocab_size,word_embeddings] = pickle.load(f)
+                [data_train, data_valid, data_test, vocab_size, word_embeddings] = pickle.load(f)
             f.close()
 
         dataset = ED_dataset(data_train)
         train_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=True,collate_fn=collate_fn,num_workers=0)
 
-        dataset = ED_dataset(data_test)
-        test_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=False,collate_fn=collate_fn,num_workers=0)
-
+        # For validation and testing batch_size is 1
         dataset = ED_dataset(data_valid)
-        valid_iter  = torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=False,collate_fn=collate_fn,num_workers=0)
+        valid_iter  = torch.utils.data.DataLoader(dataset, batch_size=1,shuffle=False,collate_fn=collate_fn,num_workers=0)
+
+        dataset = ED_dataset(data_test)
+        test_iter  = torch.utils.data.DataLoader(dataset, batch_size=1,shuffle=False,collate_fn=collate_fn,num_workers=0)
 
         return vocab_size,word_embeddings, train_iter, valid_iter, test_iter
 

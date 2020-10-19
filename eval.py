@@ -64,6 +64,8 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
     total_epoch_acc = 0
     total_epoch_acc3 = 0
 
+    eval_batch_size = 1
+
     if confusion:
         conf_matrix = torch.zeros(config.output_size, config.output_size)
     if per_class:
@@ -77,7 +79,7 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
             text, attn,target = select_input(batch,config)
             target = torch.autograd.Variable(target).long()
 
-            if (target.size()[0] is not config.batch_size):
+            if (target.size()[0] is not eval_batch_size):
                 continue
 
             if torch.cuda.is_available():
@@ -103,7 +105,7 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                     for t, p in zip(target.data, pred_ind):
                             conf_matrix[t.long(), p.long()] += 1
                 if per_class:
-                    for i in range(config.batch_size):
+                    for i in range(eval_batch_size):
                         label = target[i]
                         class_correct[label] += correct[i].item()
                         class_total[label] += 1
@@ -114,7 +116,7 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                 y_true.extend(target.data.cpu().tolist())
                 y_pred.extend(pred_ind.cpu().tolist())
 
-                acc = 100.0 * num_corrects/config.batch_size
+                acc = 100.0 * num_corrects/eval_batch_size
                 acc3 = accuracy_topk(prediction, target, topk=(3,))
                 total_epoch_loss += loss.item()
                 total_epoch_acc += acc.item()
@@ -201,6 +203,7 @@ if __name__ == '__main__':
     eval_config.param = log["param"]
     eval_config.resume_path = resume_path
     eval_config.batch_size = 1  ## batch_size=1 for testing and validation
+
     if mode == "explain":
         model = select_model(eval_config,vocab_size,word_embeddings,grad_check=False)
     else:

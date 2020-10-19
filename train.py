@@ -71,6 +71,7 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
 
             target = target.cuda()
             attn = attn.cuda()
+
         ## model prediction
         model.zero_grad()
         optimizer.zero_grad()
@@ -120,7 +121,8 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
         is_best = val_acc > best_acc1
         os.makedirs(save_home,exist_ok=True)
         save_checkpoint({'epoch': epoch + 1,'arch': config.arch_name,'state_dict': model.state_dict(),'test_acc': test_acc,'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
-        best_acc1 = max(test_acc, best_acc1)
+
+        best_acc1 = max(val_acc, best_acc1)
         lr_scheduler.step()
 
         ## tensorboard runs
@@ -167,6 +169,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     note = args.n
+
     ## Loading data
     print('Loading dataset')
     start_time = time.time()
@@ -185,7 +188,6 @@ if __name__ == '__main__':
     ## Initialising model, loss, optimizer, lr_scheduler
     model = select_model(train_config,vocab_size,word_embeddings)
     loss_fn = nn.CrossEntropyLoss()
-    my_list = []
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
