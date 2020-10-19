@@ -79,9 +79,6 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
             text, attn,target = select_input(batch,config)
             target = torch.autograd.Variable(target).long()
 
-            if (target.size()[0] is not eval_batch_size):
-                continue
-
             if torch.cuda.is_available():
                 if config.arch_name=="a_bert":
                     text = [text[0].cuda(),text[1].cuda()]
