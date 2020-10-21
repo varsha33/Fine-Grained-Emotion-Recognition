@@ -6,7 +6,7 @@ from models.LSTM_Attn import AttentionModel
 from models.selfAttention import SelfAttention
 from models.transformer_encoder import TransformerModel
 from models.RCNN import RCNN
-from models.BERT import _BERT, BERT,a_BERT,va_BERT,BERT_RCNN
+from models.BERT import _BERT, BERT,a_BERT,va_BERT,BERT_RCNN,SL_BERT
 
 
 def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
@@ -39,6 +39,8 @@ def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
         model = va_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check,freeze)
     elif arch_name == "bert_rcnn":
         model = BERT_RCNN(batch_size,output_size,hidden_size,grad_check)
+    elif arch_name == "sl_bert":
+        model = SL_BERT(batch_size,output_size,hidden_size,grad_check)
 
     return model
 
@@ -71,6 +73,10 @@ def select_input(batch,config):
         if arch_name == "va_bert":
             text = [batch["utterance_data"],batch["arousal_data"],batch["valence_data"]]
             attn = batch["utterance_data_attn_mask"]
+
+        if arch_name == "sl_bert":
+            text = [batch["speaker_data"],batch["listener_data"]]
+            attn = [batch["speaker_data_attn_mask"],batch["listener_data_attn_mask"]]
 
 
         target = batch["emotion"]

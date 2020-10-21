@@ -163,3 +163,50 @@ class BERT_RCNN(nn.Module):
 
 
         return logits
+
+class SL_BERT(nn.Module):
+
+    def __init__(self,batch_size,output_size,hidden_size,grad_check):
+        super(SL_BERT, self).__init__()
+
+
+        options_name = "bert-base-uncased"
+        self.encoder = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
+
+        self.batch_size = batch_size
+        self.output_size = output_size
+
+
+        self.dropout = nn.Dropout(0.1)
+        self.spooler = nn.Linear(hidden_size,hidden_size)
+        self.lpooler = nn.Linear(hidden_size,hidden_size)
+
+        self.sfc1 = nn.Linear(hidden_size,256)
+        self.lfc1 = nn.Linear(hidden_size,256)
+
+
+        self.fc2 = nn.Linear(2*256,256)
+        self.label = nn.Linear(256,output_size)
+        self.attn = nn.MultiheadAttention(2*hidden_size,4)
+
+    def forward(self,text,attn_mask):
+
+        sinput = self.encoder(text[0],attn_mask[0],output_hidden_states=True,return_dict=True)
+
+        linput = self.encoder(text[0],attn_mask[0],output_hidden_states=True,return_dict=True)
+
+        sinput = self.spooler(sinput.hidden_states[-1][:,0,:])
+        sinput = self.dropout(sinput)
+        sinput = torch.tanh(self.sfc1(sinput))
+
+
+        linput = self.lpooler(linput.hidden_states[-1][:,0,:])
+        linput = self.dropout(linput)
+        linput = torch.tanh(self.lfc1(linput))
+
+        sl_input = torch.cat((sinput,linput),dim=1)
+        sl_input = F.relu(self.fc2(sl_input))
+        logits = self.label(sl_input)
+
+        return logits
+

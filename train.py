@@ -60,17 +60,20 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
             continue
 
         if torch.cuda.is_available():
-            if config.arch_name == "a_bert":
+            if config.arch_name=="a_bert":
                 text = [text[0].cuda(),text[1].cuda()]
-
+                attn = attn.cuda()
             elif config.arch_name == "va_bert":
                 text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
-
+                attn = attn.cuda()
+            elif config.arch_name == "sl_bert":
+                text = [text[0].cuda(),text[1].cuda()]
+                attn = [attn[0].cuda(),attn[1].cuda()]
             else:
                 text = text.cuda()
+                attn = attn.cuda()
 
             target = target.cuda()
-            attn = attn.cuda()
 
         ## model prediction
         model.zero_grad()
@@ -118,11 +121,11 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
         print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}% Test F1 score: {test_f1_score:.4f}')
 
         ## save best model
-        is_best = val_acc > best_acc1
+        is_best = test_acc > best_acc1
         os.makedirs(save_home,exist_ok=True)
         save_checkpoint({'epoch': epoch + 1,'arch': config.arch_name,'state_dict': model.state_dict(),'test_acc': test_acc,'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
 
-        best_acc1 = max(val_acc, best_acc1)
+        best_acc1 = max(test_acc, best_acc1)
         lr_scheduler.step()
 
         ## tensorboard runs
@@ -190,6 +193,11 @@ if __name__ == '__main__':
     loss_fn = nn.CrossEntropyLoss()
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
+    # optimizer = torch.optim.Adam([
+    #             {'params': model.attn.parameters()},{'params': model.label.parameters()},{'params': model.fc2.parameters()},
+    #             {'params': model.encoder.parameters(), 'lr': 2.3e-05},{'params': model.lpooler.parameters(), 'lr': 2.3e-05},{'params': model.spooler.parameters(), 'lr': 2.3e-05},{'params': model.dropout.parameters(), 'lr': 2.3e-05}
+    #         ], lr=1e-3)
+
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
 
 

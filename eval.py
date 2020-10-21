@@ -24,8 +24,8 @@ import matplotlib.pyplot as plt
 from select_model_input import select_model,select_input
 import dataset
 from label_dict import emo_label_map,label_emo_map,class_names,class_indices
-from xai_emo_rec import explain_model
-from comparison import do_comparison
+# from xai_emo_rec import explain_model
+# from comparison import do_comparison
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -82,13 +82,18 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
             if torch.cuda.is_available():
                 if config.arch_name=="a_bert":
                     text = [text[0].cuda(),text[1].cuda()]
+                    attn = attn.cuda()
                 elif config.arch_name == "va_bert":
                     text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
+                    attn = attn.cuda()
+                elif config.arch_name == "sl_bert":
+                    text = [text[0].cuda(),text[1].cuda()]
+                    attn = [attn[0].cuda(),attn[1].cuda()]
                 else:
                     text = text.cuda()
-
+                    attn = attn.cuda()
                 target = target.cuda()
-                attn = attn.cuda()
+
             prediction = model(text,attn)
 
             correct = np.squeeze(torch.max(prediction, 1)[1].eq(target.view_as(torch.max(prediction, 1)[1])))
