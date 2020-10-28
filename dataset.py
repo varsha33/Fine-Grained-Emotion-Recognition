@@ -15,11 +15,14 @@ from transformers import BertTokenizer,AutoTokenizer
 ## custom
 from embedding import get_glove_embedding
 
-torch.manual_seed(0)
+
 np.random.seed(0)
 random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+torch.cuda.manual_seed_all(0)
 torch.backends.cudnn.deterministic = False
-torch.set_printoptions(threshold=1000)
+
 
 
 class ED_dataset(Dataset):
@@ -39,6 +42,8 @@ class ED_dataset(Dataset):
 
         item["arousal_data"] = torch.Tensor(self.data["arousal_data"][index])
         item["valence_data"] = torch.Tensor(self.data["valence_data"][index])
+        item["dom_data"] = torch.Tensor(self.data["dom_data"][index])
+
 
         item["speaker_data"] = torch.LongTensor(self.data["speaker_data"][index])
         item["listener_data"] = torch.LongTensor(self.data["listener_data"][index])
@@ -113,6 +118,7 @@ def collate_fn(data):
 
     ainput_batch,_,ainput_lengths = merge(item_info['arousal_data'],N=512,lexicon=True)
     vinput_batch,_,vinput_lengths = merge(item_info['valence_data'],N=512,lexicon=True)
+    dinput_batch,_,dinput_lengths = merge(item_info['dom_data'],N=512,lexicon=True)
 
     sinput_batch, sinput_attn_mask, sinput_lengths = merge(item_info['speaker_data'])
     linput_batch, linput_attn_mask, linput_lengths = merge(item_info['listener_data'])
@@ -129,6 +135,7 @@ def collate_fn(data):
 
     d["arousal_data"] = ainput_batch
     d["valence_data"] = vinput_batch
+    d["dom_data"] = dinput_batch
 
     d["turn_data"] = tu_list_batch
     d["turn_data_attn_mask"] = tu_list_attn_mask
@@ -158,7 +165,7 @@ def collate_fn(data):
 
 def get_dataloader(batch_size,tokenizer,embedding_type,arch_name):
 
-    if embedding_type == "bert" or embedding_type == "glove":
+    if embedding_type == "bert" or embedding_type == "glove+bert":
 
         if tokenizer == "bert":
             with open('./.preprocessed_data/dataset_preproc.p', "rb") as f:

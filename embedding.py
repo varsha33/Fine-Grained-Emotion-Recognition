@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import random
+import numpy as np
 
 ## torch packages
 import torch
@@ -17,9 +18,12 @@ from transformers import BertTokenizer,AutoTokenizer
 ## custom
 import config
 
-random.seed(0)
+
 np.random.seed(0)
+random.seed(0)
 torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+torch.cuda.manual_seed_all(0)
 torch.backends.cudnn.deterministic = False
 
 

@@ -1,13 +1,24 @@
 # _*_ coding: utf-8 _*_
 
+import numpy as np
+import random
+
+## torch packages
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.nn import functional as F
-import numpy as np
 
-torch.manual_seed(0)
+
+
 np.random.seed(0)
+random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+torch.cuda.manual_seed_all(0)
+torch.backends.cudnn.enabled = False
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
 
 class SelfAttention(nn.Module):
 	def __init__(self, batch_size, output_size, hidden_size, vocab_size, embedding_length, weights):

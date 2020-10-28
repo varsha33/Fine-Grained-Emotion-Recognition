@@ -22,3 +22,11 @@ with open(filepath) as fp:
     for cnt, line in enumerate(fp):
         valence_dict[line.split("\t")[0]] = float(line.split("\t")[1].split("\n")[0])
 fp.close()
+
+
+filepath = './.data/nrc_vad/d-scores.txt'
+dom_dict = {}
+with open(filepath) as fp:
+    for cnt, line in enumerate(fp):
+        dom_dict[line.split("\t")[0]] = float(line.split("\t")[1].split("\n")[0])
+fp.close()

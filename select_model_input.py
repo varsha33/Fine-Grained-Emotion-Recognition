@@ -6,7 +6,7 @@ from models.LSTM_Attn import AttentionModel
 from models.selfAttention import SelfAttention
 from models.transformer_encoder import TransformerModel
 from models.RCNN import RCNN
-from models.BERT import _BERT, BERT,a_BERT,va_BERT,BERT_RCNN,SL_BERT
+from models.BERT import _BERT, BERT,a_BERT,va_BERT,BERT_RCNN,vad_BERT,KEA_BERT
 
 
 def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
@@ -37,11 +37,11 @@ def select_model(config,vocab_size=None,word_embeddings=None,grad_check=True):
     elif arch_name == "va_bert":
         bert_model = _BERT(batch_size,output_size,hidden_size,grad_check)
         model = va_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check,freeze)
-    elif arch_name == "bert_rcnn":
-        model = BERT_RCNN(batch_size,output_size,hidden_size,grad_check)
-    elif arch_name == "sl_bert":
-        model = SL_BERT(batch_size,output_size,hidden_size,grad_check)
-
+    elif arch_name == "kea_bert":
+        model = KEA_BERT(batch_size,output_size,hidden_size,grad_check)
+    elif arch_name == "vad_bert":
+        bert_model = _BERT(batch_size,output_size,hidden_size,grad_check)
+        model = vad_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check,freeze)
     return model
 
 
@@ -51,9 +51,9 @@ def select_input(batch,config):
     input_type = config.input_type
     embedding_type = config.embedding_type
 
-    if embedding_type == "bert":
+    if embedding_type == "bert" or embedding_type == "glove+bert":
 
-        if arch_name == "bert" or arch_name == "bert_rcnn":
+        if arch_name == "bert":
 
             if input_type == "speaker+listener":
                 text = batch["utterance_data"]
@@ -74,10 +74,9 @@ def select_input(batch,config):
             text = [batch["utterance_data"],batch["arousal_data"],batch["valence_data"]]
             attn = batch["utterance_data_attn_mask"]
 
-        if arch_name == "sl_bert":
-            text = [batch["speaker_data"],batch["listener_data"]]
-            attn = [batch["speaker_data_attn_mask"],batch["listener_data_attn_mask"]]
-
+        if arch_name == "vad_bert" or arch_name == "kea_bert":
+            text = [batch["utterance_data"],batch["arousal_data"],batch["valence_data"],batch["dom_data"]]
+            attn = batch["utterance_data_attn_mask"]
 
         target = batch["emotion"]
         target = torch.Tensor(target)

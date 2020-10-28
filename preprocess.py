@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import collections
 
 ## custom packages
-from extract_lexicon import get_arousal_vec,get_valence_vec
+from extract_lexicon import get_arousal_vec,get_valence_vec,get_dom_vec
 from utils import flatten_list
 from embedding import get_glove_vec,get_glove_embedding
 
@@ -128,7 +128,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
     tokenized_inter_speaker, tokenized_inter_listener = [],[]
     tokenized_total_data,tokenized_speaker,tokenized_listener = [],[],[]
     tokenized_list_data,tokenized_turn_data = [],[]
-    arousal_data,valence_data = [],[]
+    arousal_data,valence_data,dom_data = [],[],[]
     glove_data = []
     for u,val_utterance in enumerate(processed_data["utterance_data_list"]): #val utterance is one conversation which has multiple utterances
 
@@ -161,6 +161,8 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 
         arousal_vec = get_arousal_vec(tokenizer,total_utterance)
         valence_vec = get_valence_vec(tokenizer,total_utterance)
+        dom_vec = get_dom_vec(tokenizer,total_utterance)
+
 
         tokenized_inter_speaker.append(speaker_iutterance)
         tokenized_inter_listener.append(listener_iutterance)
@@ -174,12 +176,12 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 
         arousal_data.append(arousal_vec)
         valence_data.append(valence_vec)
-
+        dom_data.append(dom_vec)
         glove_data.append(glove_vec)
 
-    assert len(tokenized_list_data) == len(tokenized_turn_data) ==len(tokenized_inter_speaker) == len(tokenized_inter_listener) == len(tokenized_total_data) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_total_data) == len(arousal_data) == len(valence_data) == len(glove_data)
+    assert len(tokenized_list_data) == len(tokenized_turn_data) ==len(tokenized_inter_speaker) == len(tokenized_inter_listener) == len(tokenized_total_data) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_total_data) == len(arousal_data) == len(valence_data) == len(dom_data) == len(glove_data)
 
-    save_data = {"utterance_data_list":tokenized_list_data,"utterance_data":tokenized_total_data,"utterance_data_str":processed_data["utterance_data_list"],"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"turn_data":tokenized_turn_data,"arousal_data":arousal_data,"valence_data":valence_data,"glove_data":glove_data,"emotion":processed_data["emotion"]}
+    save_data = {"utterance_data_list":tokenized_list_data,"utterance_data":tokenized_total_data,"utterance_data_str":processed_data["utterance_data_list"],"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"turn_data":tokenized_turn_data,"arousal_data":arousal_data,"valence_data":valence_data,"dom_data":dom_data,"glove_data":glove_data,"emotion":processed_data["emotion"]}
 
     return save_data
 
@@ -207,6 +209,7 @@ if __name__ == '__main__':
     with open('./.preprocessed_data/dataset_preproc.p', "wb") as f:
         pickle.dump([train_save_data, valid_save_data, test_save_data, glove_vocab_size,glove_word_embeddings], f)
         print("Saved PICKLE")
+
 
 
 

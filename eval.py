@@ -24,12 +24,15 @@ import matplotlib.pyplot as plt
 from select_model_input import select_model,select_input
 import dataset
 from label_dict import emo_label_map,label_emo_map,class_names,class_indices
+
 # from xai_emo_rec import explain_model
 # from comparison import do_comparison
 
-torch.manual_seed(0)
 np.random.seed(0)
 random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+torch.cuda.manual_seed_all(0)
 torch.backends.cudnn.deterministic = False
 
 def accuracy_topk(output, target, topk=(3,)):
@@ -86,9 +89,9 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                 elif config.arch_name == "va_bert":
                     text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
                     attn = attn.cuda()
-                elif config.arch_name == "sl_bert":
-                    text = [text[0].cuda(),text[1].cuda()]
-                    attn = [attn[0].cuda(),attn[1].cuda()]
+                elif config.arch_name == "vad_bert" or config.arch_name=="kea_bert":
+                    text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
+                    attn = attn.cuda()
                 else:
                     text = text.cuda()
                     attn = attn.cuda()
@@ -107,10 +110,9 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
                     for t, p in zip(target.data, pred_ind):
                             conf_matrix[t.long(), p.long()] += 1
                 if per_class:
-                    for i in range(eval_batch_size):
-                        label = target[i]
-                        class_correct[label] += correct[i].item()
-                        class_total[label] += 1
+                    label = target[0]
+                    class_correct[label] += correct.item()
+                    class_total[label] += 1
 
                 loss = loss_fn(prediction, target)
 

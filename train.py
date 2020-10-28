@@ -14,6 +14,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn as nn
+from transformers import get_linear_schedule_with_warmup
 
 ## for visualisation
 import matplotlib.pyplot as plt
@@ -25,11 +26,15 @@ import dataset
 import config as train_config
 from label_dict import label_emo_map
 
-
-torch.manual_seed(0)
 np.random.seed(0)
 random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+torch.cuda.manual_seed_all(0)
+torch.backends.cudnn.enabled = False
+torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = False
+
 
 
 def save_checkpoint(state, is_best,filename='checkpoint.pth.tar'):
@@ -63,12 +68,12 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
             if config.arch_name=="a_bert":
                 text = [text[0].cuda(),text[1].cuda()]
                 attn = attn.cuda()
-            elif config.arch_name == "va_bert":
+            elif config.arch_name == "va_bert" :
                 text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
                 attn = attn.cuda()
-            elif config.arch_name == "sl_bert":
-                text = [text[0].cuda(),text[1].cuda()]
-                attn = [attn[0].cuda(),attn[1].cuda()]
+            elif config.arch_name == "vad_bert" or config.arch_name =="kea_bert":
+                text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
+                attn = attn.cuda()
             else:
                 text = text.cuda()
                 attn = attn.cuda()
@@ -78,17 +83,21 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
         ## model prediction
         model.zero_grad()
         optimizer.zero_grad()
+        # print("Prediction")
         prediction = model(text,attn)
+        # print("computing loss")
         loss = loss_fn(prediction, target)
 
         ## evaluation
         num_corrects = (torch.max(prediction, 1)[1].view(target.size()).data == target.data).float().sum()
         acc = 100.0 * num_corrects/config.batch_size
-
+        # print("Loss backward")
+        startloss = time.time()
         loss.backward()
+        # print(time.time()-startloss,"Finish loss")
         clip_gradient(model, 1e-1)
         optimizer.step()
-
+        # print("=====================")
         steps += 1
         if steps % 100 == 0:
             print (f'Epoch: {epoch+1:02}, Idx: {idx+1}, Training Loss: {loss.item():.4f}, Training Accuracy: {acc.item(): .2f}%, Time taken: {((time.time()-start_train_time)/60): .2f} min')
@@ -116,16 +125,12 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
         val_loss, val_acc ,val_f1_score,val_w_f1_score,val_top3_acc= eval_model(model, valid_iter,loss_fn,config)
         print(f'Epoch: {epoch+1:02}, Train Loss: {train_loss:.3f}, Train Acc: {train_acc:.2f}%, Val. Loss: {val_loss:3f}, Val. Acc: {val_acc:.2f}%')
 
-        ## testing
-        test_loss, test_acc,test_f1_score,test_w_f1_score,test_top3_acc = eval_model(model, test_iter,loss_fn,config)
-        print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}% Test F1 score: {test_f1_score:.4f}')
-
         ## save best model
-        is_best = test_acc > best_acc1
+        is_best = val_acc > best_acc1
         os.makedirs(save_home,exist_ok=True)
-        save_checkpoint({'epoch': epoch + 1,'arch': config.arch_name,'state_dict': model.state_dict(),'test_acc': test_acc,'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
+        save_checkpoint({'epoch': epoch + 1,'arch': config.arch_name,'state_dict': model.state_dict(),'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
 
-        best_acc1 = max(test_acc, best_acc1)
+        best_acc1 = max(val_acc, best_acc1)
         lr_scheduler.step()
 
         ## tensorboard runs
@@ -136,6 +141,11 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 
         ## save logs
         if is_best:
+
+            ## testing
+            test_loss, test_acc,test_f1_score,test_w_f1_score,test_top3_acc = eval_model(model, test_iter,loss_fn,config)
+            print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}% Test F1 score: {test_f1_score:.4f}')
+
             patience_flag = 0
             log_dict["train_acc"] = train_acc
             log_dict["test_acc"] = test_acc
@@ -150,6 +160,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
             log_dict["note"] = note
             log_dict["weighted_test_f1_score"] = test_w_f1_score
             log_dict["weighted_valid_f1_score"] = val_w_f1_score
+
 
             with open(save_home+"/log.json", 'w') as fp:
                 json.dump(log_dict, fp,indent=4)
@@ -191,12 +202,10 @@ if __name__ == '__main__':
     ## Initialising model, loss, optimizer, lr_scheduler
     model = select_model(train_config,vocab_size,word_embeddings)
     loss_fn = nn.CrossEntropyLoss()
+    total_steps = len(train_iter) * train_config.nepoch
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
-    # optimizer = torch.optim.Adam([
-    #             {'params': model.attn.parameters()},{'params': model.label.parameters()},{'params': model.fc2.parameters()},
-    #             {'params': model.encoder.parameters(), 'lr': 2.3e-05},{'params': model.lpooler.parameters(), 'lr': 2.3e-05},{'params': model.spooler.parameters(), 'lr': 2.3e-05},{'params': model.dropout.parameters(), 'lr': 2.3e-05}
-    #         ], lr=1e-3)
+
 
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
 
