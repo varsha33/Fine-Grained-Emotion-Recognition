@@ -195,9 +195,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     tokenizer_type = args.t
 
-    train_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","train")
-    valid_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","valid")
-    test_pdata = data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","test")
+    train_pdata = data_reader("./.data/empatheticdialogues/","train")
+    valid_pdata = data_reader("./.data/empatheticdialogues/","valid")
+    test_pdata = data_reader("./.data/empatheticdialogues/","test")
 
     train_save_data = tokenize_data(train_pdata,tokenizer_type)
     valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
