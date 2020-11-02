@@ -33,7 +33,6 @@ random.seed(0)
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 torch.cuda.manual_seed_all(0)
-torch.backends.cudnn.deterministic = False
 
 def accuracy_topk(output, target, topk=(3,)):
     """ Taken fromhttps://discuss.pytorch.org/t/imagenet-example-accuracy-calculation/7840/2
@@ -57,7 +56,7 @@ def get_pred_softmax(logits):
     softmax_layer = nn.Softmax(dim=1)
     return softmax_layer(logits)
 
-def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
+def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=False):
 
     confusion = config.confusion
     per_class = config.per_class
@@ -79,17 +78,17 @@ def eval_model(model, val_iter, loss_fn,config,mode="train",explain=False):
     with torch.no_grad():
         for idx, batch in enumerate(val_iter):
             model = model.cuda()
-            text, attn,target = select_input(batch,config)
+            text, attn,target = select_input(batch,config,arch_name)
             target = torch.autograd.Variable(target).long()
 
             if torch.cuda.is_available():
-                if config.arch_name=="a_bert":
+                if arch_name=="a_bert":
                     text = [text[0].cuda(),text[1].cuda()]
                     attn = attn.cuda()
-                elif config.arch_name == "va_bert":
+                elif arch_name == "va_bert":
                     text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
                     attn = attn.cuda()
-                elif config.arch_name == "vad_bert" or config.arch_name=="kea_bert":
+                elif arch_name == "vad_bert" or arch_name=="kea_bert":
                     text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
                     attn = attn.cuda()
                 else:
@@ -149,6 +148,8 @@ def load_model(resume,model,optimizer):
 
     checkpoint = torch.load(resume)
     start_epoch = checkpoint['epoch']
+    for i,v in checkpoint["state_dict"].items():
+        print(i,v.size())
     model.load_state_dict(checkpoint['state_dict'])
     model = model.cuda()
     model.eval()
@@ -244,7 +245,7 @@ if __name__ == '__main__':
         ## testing
 
         test_loss, test_acc,test_f1_score,test_f1_score_w,test_top3_acc= eval_model(model, test_iter,loss_fn,eval_config,mode)
-
+        print(test_acc)
         print(f'Top3 Acc: {test_top3_acc:.3f}%, F1 Score: {test_f1_score:.3f}, F1 Score W: {test_f1_score_w:.3f}')
 
 

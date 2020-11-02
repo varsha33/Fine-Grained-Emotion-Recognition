@@ -5,7 +5,7 @@ import math
 ## torch packages
 import torch
 import torch.nn as nn
-from transformers import BertTokenizer, BertForSequenceClassification,BertModel,AlbertForSequenceClassification,DistilBertForSequenceClassification,ElectraModel
+from transformers import BertTokenizer, BertForSequenceClassification,BertModel,AlbertModel,DistilBertModel,ElectraModel
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
@@ -16,7 +16,7 @@ random.seed(0)
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 torch.cuda.manual_seed_all(0)
-torch.backends.cudnn.deterministic = False
+
 import time
 
 
@@ -27,12 +27,14 @@ class BERT(nn.Module):
 
         options_name = "bert-base-uncased"
         self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
+        self.label = nn.Linear(hidden_size,output_size)
 
     def forward(self, text,attn_mask): #here text is utterance based on the input type specified
 
         text_fea = self.encoder(text,attn_mask,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
-
-        return text_fea.logits
+        input = text_fea.hidden_states[-1][:,0,:]
+        output = self.label(input)
+        return output
 
 class _BERT(nn.Module):
 
@@ -135,18 +137,19 @@ class KEA_BERT(nn.Module):
 
 
         options_name = "bert-base-uncased"
-        self.encoder = BertModel.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
+        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
 
         self.batch_size = batch_size
         self.output_size = output_size
-        self.lstm_hidden_size = lstm_hidden_size
         self.hidden_size = hidden_size
 
         self.a = nn.Linear(512,hidden_size) #512 is the size of lexicon_vec
         self.v = nn.Linear(512,hidden_size) #512 is the size of lexicon_vec
-
+        self.d = nn.Linear(512,hidden_size) #512 is the size of lexicon_vec
 
         self.layernorm = nn.LayerNorm(hidden_size)
+
+
         self.fc1 = nn.Linear(hidden_size,384)
         self.label = nn.Linear(384,output_size)
 
@@ -171,9 +174,9 @@ class KEA_BERT(nn.Module):
 
         arousal_encoder = F.relu(self.a(text[1]))
         valence_encoder = F.relu(self.v(text[2]))
-        dom_encoder = F.relu(self.v(text[3]))
+        dom_encoder = F.relu(self.d(text[3]))
 
-        input = torch.cat((input,arousal_encoder.unsqueeze(1),valence_encoder.unsqueeze(1),dom_encoder.unsqueeze(1)),dim=1)
+        input = torch.cat((input,arousal_encoder.unsqueeze(1),valence_encoder.unsqueeze(1)),dim=1)
         input = self.layernorm(input)
 
         output = self.attention_net(input,cls_input)
@@ -236,3 +239,4 @@ class vad_BERT(nn.Module):
         logits = self.label(output)
 
         return logits
+

@@ -3,17 +3,16 @@ input_type = "speaker+listener"
 embedding_type = "bert"
 arch_name = "kea_bert"
 
-
 # learning_rate = 0.005 # for models until bert
-learning_rate = 3e-05 # for bert-based models
+learning_rate = 4e-05 # for bert-based models
 
 batch_size = 20
 # batch_size = 64 # for models until bert
 output_size = 32
 
 # hidden_size = 128 # for models until bert
-# hidden_size = 768 # for bert-based models, cannot change as fine-tuning
-hidden_size = 256 # electra
+hidden_size = 768 # for bert-based models, cannot change as fine-tuning
+# hidden_size = 256 # electra
 
 if embedding_type == "bert":
 	embedding_length = None
@@ -25,7 +24,7 @@ max_seq_len = 512 # used only for glove embedding type
 
 step_size = 3
 start_epoch = 0 # for start training
-nepoch = 30
+nepoch = 3
 patience = 30
 
 # Accuracy display

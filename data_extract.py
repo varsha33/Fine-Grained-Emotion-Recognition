@@ -118,5 +118,6 @@ def extract_data_stats():
 
 if __name__ == '__main__':
 
-    data_reader("/home/ashvar/varsha/raw_data/empatheticdialogues/","valid")
+    for i in ["train","test","valid"]:
+        data_reader("./.data/raw/empatheticdialogues/",i)
     # extract_data_stats()

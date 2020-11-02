@@ -31,9 +31,6 @@ random.seed(0)
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 torch.cuda.manual_seed_all(0)
-torch.backends.cudnn.enabled = False
-torch.backends.cudnn.benchmark = False
-torch.backends.cudnn.deterministic = False
 
 
 
@@ -58,20 +55,20 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
     start_train_time = time.time()
     for idx, batch in enumerate(train_iter):
 
-        text, attn, target = select_input(batch,config)
+        text, attn, target = select_input(batch,config,arch_name)
         target = torch.autograd.Variable(target).long()
 
         if (target.size()[0] is not config.batch_size):# Last batch may have length different than config.batch_size
             continue
 
         if torch.cuda.is_available():
-            if config.arch_name=="a_bert":
+            if arch_name=="a_bert":
                 text = [text[0].cuda(),text[1].cuda()]
                 attn = attn.cuda()
-            elif config.arch_name == "va_bert" :
+            elif arch_name == "va_bert" :
                 text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
                 attn = attn.cuda()
-            elif config.arch_name == "vad_bert" or config.arch_name =="kea_bert":
+            elif arch_name == "vad_bert" or arch_name =="kea_bert":
                 text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
                 attn = attn.cuda()
             else:
@@ -113,22 +110,20 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
     best_acc1 = 0
     patience_flag = 0
     train_iter,valid_iter,test_iter = data[0],data[1],data[2] # data is a tuple of three iterators
-    log_dict = {}
-    log_dict["param"] = config.param
 
-    print("Start Training")
+    # print("Start Training")
     for epoch in range(config.start_epoch,config.nepoch):
 
         ## train and validation
         train_loss, train_acc = train_epoch(model, train_iter, epoch,loss_fn,optimizer,config)
 
-        val_loss, val_acc ,val_f1_score,val_w_f1_score,val_top3_acc= eval_model(model, valid_iter,loss_fn,config)
+        val_loss, val_acc ,val_f1_score,val_w_f1_score,val_top3_acc= eval_model(model, valid_iter,loss_fn,config,arch_name)
         print(f'Epoch: {epoch+1:02}, Train Loss: {train_loss:.3f}, Train Acc: {train_acc:.2f}%, Val. Loss: {val_loss:3f}, Val. Acc: {val_acc:.2f}%')
 
         ## save best model
         is_best = val_acc > best_acc1
         os.makedirs(save_home,exist_ok=True)
-        save_checkpoint({'epoch': epoch + 1,'arch': config.arch_name,'state_dict': model.state_dict(),'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
+        save_checkpoint({'epoch': epoch + 1,'arch': arch_name,'state_dict': model.state_dict(),'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
 
         best_acc1 = max(val_acc, best_acc1)
         lr_scheduler.step()
@@ -143,7 +138,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
         if is_best:
 
             ## testing
-            test_loss, test_acc,test_f1_score,test_w_f1_score,test_top3_acc = eval_model(model, test_iter,loss_fn,config)
+            test_loss, test_acc,test_f1_score,test_w_f1_score,test_top3_acc = eval_model(model, test_iter,loss_fn,config,arch_name)
             print(f'Test Loss: {test_loss:.3f}, Test Acc: {test_acc:.2f}% Test F1 score: {test_f1_score:.4f}')
 
             patience_flag = 0
@@ -184,6 +179,9 @@ if __name__ == '__main__':
 
     note = args.n
 
+    log_dict = {}
+    log_dict["param"] = train_config.param
+
     ## Loading data
     print('Loading dataset')
     start_time = time.time()
@@ -195,12 +193,21 @@ if __name__ == '__main__':
 
 
     ## Initialising parameters from train_config
+
+    # learning_rate = lr
+    #arch_name = arch
+    # log_dict["param"]["learning_rate"] = lr
+    # log_dict["param"]["arch_name"] = arch
+    # note = "learning_rate:"+str(lr)
+
     learning_rate = train_config.learning_rate
+
     arch_name = train_config.arch_name
+
     input_type = train_config.input_type
 
     ## Initialising model, loss, optimizer, lr_scheduler
-    model = select_model(train_config,vocab_size,word_embeddings)
+    model = select_model(train_config,arch_name,vocab_size,word_embeddings)
     loss_fn = nn.CrossEntropyLoss()
     total_steps = len(train_iter) * train_config.nepoch
 
@@ -216,3 +223,4 @@ if __name__ == '__main__':
     save_home = "./save/"+input_type+"/"+arch_name+"/"+model_run_time
 
     train_model(train_config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_home)
+
