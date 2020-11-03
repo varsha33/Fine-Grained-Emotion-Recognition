@@ -27,14 +27,13 @@ class BERT(nn.Module):
 
         options_name = "bert-base-uncased"
         self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
-        self.label = nn.Linear(hidden_size,output_size)
+
 
     def forward(self, text,attn_mask): #here text is utterance based on the input type specified
 
         text_fea = self.encoder(text,attn_mask,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
-        input = text_fea.hidden_states[-1][:,0,:]
-        output = self.label(input)
-        return output
+
+        return text_fea.logits
 
 class _BERT(nn.Module):
 
@@ -176,9 +175,8 @@ class KEA_BERT(nn.Module):
         valence_encoder = F.relu(self.v(text[2]))
         dom_encoder = F.relu(self.d(text[3]))
 
-        input = torch.cat((input,arousal_encoder.unsqueeze(1),valence_encoder.unsqueeze(1)),dim=1)
+        input = torch.cat((input,arousal_encoder.unsqueeze(1),valence_encoder.unsqueeze(1),dom_encoder.unsqueeze(1)),dim=1)
         input = self.layernorm(input)
-
         output = self.attention_net(input,cls_input)
         output = F.relu(self.fc1(output))
         logits = self.label(output)
@@ -240,3 +238,43 @@ class vad_BERT(nn.Module):
 
         return logits
 
+class self_attn_BERT(nn.Module):
+
+    def __init__(self,batch_size,output_size,hidden_size,grad_check):
+        super(self_attn_BERT, self).__init__()
+
+
+        options_name = "bert-base-uncased"
+        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size,gradient_checkpointing=grad_check)
+
+        self.batch_size = batch_size
+        self.output_size = output_size
+        self.hidden_size = hidden_size
+
+        self.fc1 = nn.Linear(hidden_size,384)
+        self.label = nn.Linear(384,output_size)
+
+    def attention_net(self,input_matrix, final_output):
+
+        hidden = final_output
+
+        attn_weights = torch.bmm(input_matrix, hidden.unsqueeze(2)).squeeze(2)
+
+        soft_attn_weights = F.softmax(attn_weights, 1)
+
+        new_hidden_state = torch.bmm(input_matrix.transpose(1, 2), soft_attn_weights.unsqueeze(2)).squeeze(2)
+
+        return new_hidden_state
+
+
+    def forward(self,text,attn_mask):
+
+        input = self.encoder(text[0],attn_mask,output_hidden_states=True,return_dict=True).hidden_states[-1]
+
+        cls_input = input[:,0,:]
+
+        output = self.attention_net(input,cls_input)
+        output = F.relu(self.fc1(output))
+        logits = self.label(output)
+
+        return logits

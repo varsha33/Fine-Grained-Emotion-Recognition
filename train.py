@@ -68,7 +68,7 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
             elif arch_name == "va_bert" :
                 text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
                 attn = attn.cuda()
-            elif arch_name == "vad_bert" or arch_name =="kea_bert":
+            elif arch_name == "vad_bert" or arch_name =="kea_bert" or arch_name == "self_attn_bert":
                 text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
                 attn = attn.cuda()
             else:
@@ -190,15 +190,6 @@ if __name__ == '__main__':
     data = (train_iter,valid_iter,test_iter)
     finish_time = time.time()
     print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))
-
-
-    ## Initialising parameters from train_config
-
-    # learning_rate = lr
-    #arch_name = arch
-    # log_dict["param"]["learning_rate"] = lr
-    # log_dict["param"]["arch_name"] = arch
-    # note = "learning_rate:"+str(lr)
 
     learning_rate = train_config.learning_rate
 

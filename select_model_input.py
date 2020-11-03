@@ -6,7 +6,7 @@ from models.LSTM_Attn import AttentionModel
 from models.selfAttention import SelfAttention
 from models.transformer_encoder import TransformerModel
 from models.RCNN import RCNN
-from models.BERT import _BERT, BERT,a_BERT,va_BERT,vad_BERT,KEA_BERT
+from models.BERT import _BERT, BERT,a_BERT,va_BERT,vad_BERT,KEA_BERT,self_attn_BERT
 
 
 def select_model(config,arch_name,vocab_size=None,word_embeddings=None,grad_check=True):
@@ -42,7 +42,8 @@ def select_model(config,arch_name,vocab_size=None,word_embeddings=None,grad_chec
     elif arch_name == "vad_bert":
         bert_model = _BERT(batch_size,output_size,hidden_size,grad_check)
         model = vad_BERT(bert_resume_path,bert_model,batch_size,output_size,hidden_size,grad_check,freeze)
-
+    elif arch_name == "self_attn_bert":
+        model = self_attn_BERT(batch_size,output_size,hidden_size,grad_check)
     return model
 
 
@@ -75,7 +76,7 @@ def select_input(batch,config,arch_name):
             text = [batch["utterance_data"],batch["arousal_data"],batch["valence_data"]]
             attn = batch["utterance_data_attn_mask"]
 
-        if arch_name == "vad_bert" or arch_name == "kea_bert":
+        if arch_name == "vad_bert" or arch_name == "kea_bert" or arch_name == "self_attn_bert":
             text = [batch["utterance_data"],batch["arousal_data"],batch["valence_data"],batch["dom_data"]]
             attn = batch["utterance_data_attn_mask"]
 

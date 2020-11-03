@@ -26,7 +26,7 @@ import dataset
 from label_dict import emo_label_map,label_emo_map,class_names,class_indices
 
 # from xai_emo_rec import explain_model
-# from comparison import do_comparison
+from comparison import do_comparison
 
 np.random.seed(0)
 random.seed(0)
@@ -88,7 +88,7 @@ def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=Fa
                 elif arch_name == "va_bert":
                     text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
                     attn = attn.cuda()
-                elif arch_name == "vad_bert" or arch_name=="kea_bert":
+                elif arch_name == "vad_bert" or arch_name=="kea_bert" or arch_name == "self_attn_bert":
                     text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
                     attn = attn.cuda()
                 else:
@@ -127,7 +127,7 @@ def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=Fa
 
         if confusion:
             import seaborn as sns
-            sns.heatmap(conf_matrix, annot=True,xticklabels=list(emo_label_map.keys()),yticklabels=list(emo_label_map.keys()))
+            sns.heatmap(conf_matrix, annot=True,xticklabels=list(emo_label_map.keys()),yticklabels=list(emo_label_map.keys()),cmap='Blues')
             plt.show()
         if per_class:
             for i in range(config.output_size):
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     if mode == "explain":
         model = select_model(eval_config,vocab_size,word_embeddings,grad_check=False)
     else:
-        model = select_model(eval_config,vocab_size,word_embeddings)
+        model = select_model(eval_config,arch_name,vocab_size,word_embeddings)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
@@ -244,7 +244,7 @@ if __name__ == '__main__':
 
         ## testing
 
-        test_loss, test_acc,test_f1_score,test_f1_score_w,test_top3_acc= eval_model(model, test_iter,loss_fn,eval_config,mode)
+        test_loss, test_acc,test_f1_score,test_f1_score_w,test_top3_acc= eval_model(model, test_iter,loss_fn,eval_config,arch_name,mode)
         print(test_acc)
         print(f'Top3 Acc: {test_top3_acc:.3f}%, F1 Score: {test_f1_score:.3f}, F1 Score W: {test_f1_score_w:.3f}')
 
@@ -257,4 +257,4 @@ if __name__ == '__main__':
         eval_config.per_class = False
 
         ## explaining
-        eval_model(model, test_iter,loss_fn,eval_config,mode,explain=True)
+        eval_model(model, test_iter,loss_fn,eval_config,arch_name,mode,explain=True)

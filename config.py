@@ -4,7 +4,7 @@ embedding_type = "bert"
 arch_name = "kea_bert"
 
 # learning_rate = 0.005 # for models until bert
-learning_rate = 4e-05 # for bert-based models
+learning_rate = 3e-05 # for bert-based models
 
 batch_size = 20
 # batch_size = 64 # for models until bert
@@ -22,7 +22,7 @@ else:
 
 max_seq_len = 512 # used only for glove embedding type
 
-step_size = 3
+step_size = 10
 start_epoch = 0 # for start training
 nepoch = 3
 patience = 30
@@ -38,3 +38,4 @@ resume_path = "/home/ashvar/varsha/Emotion-Recognition/save/speaker+listener/ber
 
 param = {"input_type":input_type,"tokenizer":tokenizer,"embedding_type":embedding_type,"arch_name":arch_name,"learning_rate":learning_rate,"batch_size":batch_size,"hidden_size":hidden_size,"embedding_length":embedding_length,"max_seq_len":max_seq_len,"output_size":output_size,"step_size":step_size,"freeze":False}
 
+tuning = False
