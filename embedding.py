@@ -29,7 +29,7 @@ torch.cuda.manual_seed_all(0)
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 TEXT = data.Field(sequential=True, tokenize=tokenizer.tokenize, lower=True, include_lengths=False, batch_first=True,init_token='<sos>',eos_token='<eos>')
 fields = {'utterance_data':('utterance', TEXT)}
-train_data, valid_data, test_data = data.TabularDataset.splits(path = './.data/empathetic_dialogues',train = 'train.csv',validation = 'valid.csv',test = 'test.csv',format = 'csv',fields = fields,skip_header = False)
+train_data, valid_data, test_data = data.TabularDataset.splits(path = '/content/gdrive/My Drive/emotion_recognition/.data/empathetic_dialogues',train = 'train.csv',validation = 'valid.csv',test = 'test.csv',format = 'csv',fields = fields,skip_header = False)
 
 TEXT.build_vocab(train_data, vectors=GloVe(name='6B', dim=200))
 

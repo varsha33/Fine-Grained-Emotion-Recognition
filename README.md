@@ -7,7 +7,11 @@ For data preprocessing, run the following command
 ```
 python preprocess.py
 ```
-For training the model, go to config.py to set the required parameters 
+For training the model, go to config.py to set the required parameters. The training for this work was done entirely in Google Colab due to resource requirements. Use kea_colab_notebook.
+
+### Alternative
+
+Follow the below instructions to use the python scripts
 
 ```
 python train.py

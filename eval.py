@@ -26,7 +26,7 @@ import dataset
 from label_dict import emo_label_map,label_emo_map,class_names,class_indices
 
 # from xai_emo_rec import explain_model
-from comparison import do_comparison
+# from comparison import do_comparison
 
 np.random.seed(0)
 random.seed(0)
@@ -82,19 +82,12 @@ def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=Fa
             target = torch.autograd.Variable(target).long()
 
             if torch.cuda.is_available():
-                if arch_name=="a_bert":
-                    text = [text[0].cuda(),text[1].cuda()]
-                    attn = attn.cuda()
-                elif arch_name == "va_bert":
-                    text = [text[0].cuda(),text[1].cuda(),text[2].cuda()]
-                    attn = attn.cuda()
-                elif arch_name == "vad_bert" or arch_name=="kea_bert" or arch_name == "self_attn_bert":
-                    text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
-                    attn = attn.cuda()
-                else:
-                    text = text.cuda()
-                    attn = attn.cuda()
-                target = target.cuda()
+              if arch_name =="kea_electra" or arch_name == "kea_bert":
+                text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
+              else:
+                text = text.cuda()
+              attn = attn.cuda()
+              target = target.cuda()
 
             prediction = model(text,attn)
 
@@ -128,6 +121,7 @@ def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=Fa
         if confusion:
             import seaborn as sns
             sns.heatmap(conf_matrix, annot=True,xticklabels=list(emo_label_map.keys()),yticklabels=list(emo_label_map.keys()),cmap='Blues')
+
             plt.show()
         if per_class:
             for i in range(config.output_size):

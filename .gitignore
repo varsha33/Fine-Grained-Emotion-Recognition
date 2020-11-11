@@ -10,7 +10,6 @@ captum_test.ipynb
 .ipynb_checkpoints/
 *.out
 xai_emo_rec.py
-*.ipynb
 comparison.py
 results/
 .preprocessed_data/

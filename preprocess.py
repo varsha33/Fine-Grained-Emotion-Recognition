@@ -195,9 +195,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     tokenizer_type = args.t
 
-    train_pdata = data_reader("./.data/empatheticdialogues/","train")
-    valid_pdata = data_reader("./.data/empatheticdialogues/","valid")
-    test_pdata = data_reader("./.data/empatheticdialogues/","test")
+    train_pdata = data_reader("./.data/raw/empatheticdialogues/","train")
+    valid_pdata = data_reader("./.data/raw/empatheticdialogues/","valid")
+    test_pdata = data_reader("./.data/raw/empatheticdialogues/","test")
 
     train_save_data = tokenize_data(train_pdata,tokenizer_type)
     valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
@@ -206,9 +206,13 @@ if __name__ == '__main__':
 
     glove_vocab_size, glove_word_embeddings = get_glove_embedding()
 
-    with open('./.preprocessed_data/dataset_preproc.p', "wb") as f:
-        pickle.dump([train_save_data, valid_save_data, test_save_data, glove_vocab_size,glove_word_embeddings], f)
-        print("Saved PICKLE")
+    if tokenizer_type == "bert-base-uncased":
+        with open('./.preprocessed_data/mid_dataset_preproc.p', "wb") as f:
+            pickle.dump([train_save_data, valid_save_data, test_save_data, glove_vocab_size,glove_word_embeddings], f)
+            print("Saved PICKLE")
+
+
+
 
 
 
