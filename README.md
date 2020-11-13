@@ -1,4 +1,4 @@
-# Emotion Recognition
+# Fine-Grained Emotion Recognition
 
 ## Setup
 
