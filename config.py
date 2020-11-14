@@ -3,17 +3,13 @@ input_type = "speaker+listener"
 embedding_type = "bert"
 arch_name = "electra"
 
-# learning_rate = 0.005 # for models until bert
-learning_rate = 3e-05 # for bert-based models
+learning_rate = 3e-05
 
 batch_size = 12
-# batch_size = 64 # for models until bert
+
 output_size = 32
 
-# hidden_size = 128 # for models until bert
 hidden_size = 768 # for bert-based models, cannot change as fine-tuning
-# hidden_size = 256 # electra
-
 
 embedding_length = None
 
