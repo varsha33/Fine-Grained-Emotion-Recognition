@@ -1,7 +1,7 @@
 tokenizer = ""
 input_type = "speaker+listener"
 embedding_type = "bert"
-arch_name = "electra"
+arch_name = "kea_electra"
 
 learning_rate = 3e-05
 
@@ -13,7 +13,7 @@ hidden_size = 768 # for bert-based models, cannot change as fine-tuning
 
 embedding_length = None
 
-step_size = 10
+step_size = 2
 start_epoch = 0 # for start training
 nepoch = 5
 patience = 30
