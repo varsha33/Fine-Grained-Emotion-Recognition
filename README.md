@@ -23,9 +23,12 @@ python eval.py -r <model path> -m <mode>
 ```
 
 ## Requirements
-  * Python 3.7.7
-  * PyTorch 1.4.0
 
+Install the required packages mentioned in requirements.txt using pip.
+
+```
+pip install -r requirements.txt
+```
 
 ## Credits
 
