@@ -7,7 +7,7 @@ import argparse
 ## torch packages
 import torch
 from transformers import BertTokenizer,AutoTokenizer
-
+import re
 ## for visualisation
 import matplotlib.pyplot as plt
 import collections
@@ -15,7 +15,7 @@ import collections
 ## custom packages
 from extract_lexicon import get_arousal_vec,get_valence_vec,get_dom_vec
 from utils import flatten_list
-from embedding import get_glove_vec,get_glove_embedding
+# from embedding import get_glove_vec,get_glove_embedding
 
 emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, 'sad': 5, 'grateful': 6, 'lonely': 7,
     'impressed': 8, 'afraid': 9, 'disgusted': 10, 'confident': 11, 'terrified': 12, 'hopeful': 13, 'anxious': 14, 'disappointed': 15,
@@ -23,6 +23,15 @@ emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, '
     'content': 24, 'devastated': 25, 'sentimental': 26, 'caring': 27, 'trusting': 28, 'ashamed': 29, 'apprehensive': 30, 'faithful': 31}
 
 emo_map_inverse =  {v: k for k, v in emo_map.items()}
+
+def get_one_hot(emo, class_size):
+
+    targets = np.zeros(class_size)
+    emo_list = [int(e) for e in emo.split(",")]
+    for e in emo_list:
+        targets[e-1] = 1
+    return list(targets)
+
 
 def extract_data_stats():
 
@@ -137,7 +146,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
         speaker_utterance,listener_utterance,speaker_iutterance,listener_iutterance,total_utterance = [101],[101],[101],[101],[101]
 
         total_utterance_list = []
-        glove_vec = []
+        # glove_vec = []
 
         for s,val_speaker in enumerate(tokenized_i): ## for each utterance inside a conversation
 
@@ -153,7 +162,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 
             total_utterance.extend(val_speaker+[102])
             total_utterance_list.append(val_speaker+[102])
-            glove_vec.extend(get_glove_vec(val_utterance[s]))
+            # glove_vec.extend(get_glove_vec(val_utterance[s]))
 
         turn_data = [[101]+a+b for a, b in zip(total_utterance_list[::2],total_utterance_list[1::2])] # turnwise data, [[s1],[l1],[s2],[l2],..] --> [[s1;l1],[s2;l2],..]
 
@@ -177,14 +186,248 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
         arousal_data.append(arousal_vec)
         valence_data.append(valence_vec)
         dom_data.append(dom_vec)
-        glove_data.append(glove_vec)
+        # glove_data.append(glove_vec)
 
-    assert len(tokenized_list_data) == len(tokenized_turn_data) ==len(tokenized_inter_speaker) == len(tokenized_inter_listener) == len(tokenized_total_data) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_total_data) == len(arousal_data) == len(valence_data) == len(dom_data) == len(glove_data)
+    assert len(tokenized_list_data) == len(tokenized_turn_data) ==len(tokenized_inter_speaker) == len(tokenized_inter_listener) == len(tokenized_total_data) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_total_data) == len(arousal_data) == len(valence_data) == len(dom_data)
 
-    save_data = {"utterance_data_list":tokenized_list_data,"utterance_data":tokenized_total_data,"utterance_data_str":processed_data["utterance_data_list"],"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"turn_data":tokenized_turn_data,"arousal_data":arousal_data,"valence_data":valence_data,"dom_data":dom_data,"glove_data":glove_data,"emotion":processed_data["emotion"]}
+    save_data = {"utterance_data_list":tokenized_list_data,"utterance_data":tokenized_total_data,"utterance_data_str":processed_data["utterance_data_list"],"speaker_idata":tokenized_inter_speaker,"listener_idata":tokenized_inter_listener,"speaker_data":tokenized_speaker,"listener_data":tokenized_listener,"turn_data":tokenized_turn_data,"arousal_data":arousal_data,"valence_data":valence_data,"dom_data":dom_data,"emotion":processed_data["emotion"]}
 
     return save_data
 
+
+def go_emotions_preprocess(tokenizer_type="bert-base-uncased"):
+        data_dict = {}
+        data_home = "./.data/goemotions/"
+        nlabel = 27
+
+        for datatype in ["train","valid","test"]:
+            datafile = data_home + datatype + ".tsv"
+            ## cause => tweet, changed for uniformity sake
+            data = pd.read_csv(datafile, sep='\t',names=["cause","emotion","user"])
+
+            emotion,cause = [],[]
+
+            for i,emo in enumerate(data["emotion"]):
+                emotion.append(get_one_hot(emo,nlabel))
+                cause.append(data["cause"][i])
+
+            print("Tokenizing data")
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_type)
+            tokenized_cause =tokenizer.batch_encode_plus(cause).input_ids
+
+            processed_data = {}
+            maximum_utterance = max([len(i) for i in tokenized_cause])
+            average_utterance = np.mean([len(i) for i in tokenized_cause])
+            print(len(cause),len(emotion),len(tokenized_cause))
+            print("Max utterance length:",maximum_utterance,"Avg utterance length:",average_utterance)
+
+
+            ## changed prompt --> cause for uniformity
+            processed_data["tokenized_cause"] = tokenized_cause
+            processed_data["emotion"] = emotion
+            processed_data["cause"] = cause
+
+            arousal_vec,valence_vec,dom_vec = [],[],[]
+            for cause_i in tokenized_cause:
+                arousal_vec.append(get_arousal_vec(tokenizer,cause_i))
+                valence_vec.append(get_valence_vec(tokenizer,cause_i))
+                dom_vec.append(get_dom_vec(tokenizer,cause_i))
+
+
+            processed_data["arousal_data"] = arousal_vec
+            processed_data["valence_data"] = valence_vec
+            processed_data["dom_data"] = dom_vec
+
+            processed_data = pd.DataFrame.from_dict(processed_data)
+            data_dict[datatype] = processed_data
+
+            print(len(emotion),len(tokenized_cause),len(arousal_vec),len(valence_vec),len(dom_vec))
+        if tokenizer_type == "bert-base-uncased":
+            with open("./.preprocessed_data/goemotions_preprocessed_bert.pkl", 'wb') as f:
+                pickle.dump(data_dict, f)
+            f.close()
+
+def sem_eval_preprocess(tokenizer_type):
+
+    data_dict = {}
+    for datatype in ["train","valid","test"]:
+
+        with open("./.data/sem_eval/"+datatype+".txt", 'r') as fd:
+            data = [l.strip().split('\t') for l in fd.readlines()][1:]
+
+        X = [d[1] for d in data]
+
+        y = [[int(d) for d in d[2:]] for d in data]
+
+
+        # return X, y
+
+        cause,emotion = [],[]
+        count = 0
+
+        for i,x_i in enumerate(X):
+            # print(i)
+
+        #   ## remove non_ascii like emojis etc
+            x_proc_i= [''.join([i if ord(i) < 128 else '' for i in text]) for text in x_i]
+            x_proc_i = "".join(x_proc_i).replace(r'(RT|rt)[ ]*@[ ]*[\S]+',r'')
+
+            ##
+            ## <https... or www... --> URL
+            x_proc_i = re.sub(r'((www\.[\S]+)|(https?://[\S]+))', ' URL ',x_proc_i)
+
+            ## @<handle> --> USER_MENTION
+            x_proc_i = re.sub(r'@[\S]+', 'USER_MENTION', x_proc_i)
+
+            ## &amp; --> and
+            x_proc_i = x_proc_i.replace(r'&amp;',r'and')
+
+            ## #<hastag> --> <hastag>
+            x_proc_i = re.sub(r'#(\S+)', r' \1 ', x_proc_i)
+
+            ## remove rt --> space
+            x_proc_i = re.sub(r'\brt\b', '', x_proc_i)
+
+            ## remove more than 2 dots (..) --> space
+            x_proc_i = re.sub(r'\.{2,}', ' ', x_proc_i)
+
+            x_proc_i = x_proc_i.strip(' "\'')
+
+            ## remove multiple space with single space
+            x_proc_i = re.sub(r'\s+', ' ', x_proc_i)
+
+
+            cause.append(x_proc_i)
+            emotion.append(y[i])
+
+        print("Tokenizing data")
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_type)
+        tokenized_cause =tokenizer.batch_encode_plus(cause).input_ids
+
+        processed_data = {}
+        maximum_utterance = max([len(i) for i in tokenized_cause])
+        average_utterance = np.mean([len(i) for i in tokenized_cause])
+        print(len(cause),len(emotion),len(tokenized_cause))
+        print("Max utterance length:",maximum_utterance,"Avg utterance length:",average_utterance)
+
+
+        ## changed prompt --> cause for uniformity
+        processed_data["tokenized_cause"] = tokenized_cause
+        processed_data["emotion"] = emotion
+        processed_data["cause"] = cause
+
+        arousal_vec,valence_vec,dom_vec = [],[],[]
+        for cause_i in tokenized_cause:
+            arousal_vec.append(get_arousal_vec(tokenizer,cause_i))
+            valence_vec.append(get_valence_vec(tokenizer,cause_i))
+            dom_vec.append(get_dom_vec(tokenizer,cause_i))
+
+
+        processed_data["arousal_data"] = arousal_vec
+        processed_data["valence_data"] = valence_vec
+        processed_data["dom_data"] = dom_vec
+
+        processed_data = pd.DataFrame.from_dict(processed_data)
+        data_dict[datatype] = processed_data
+
+        print(len(emotion),len(tokenized_cause),len(arousal_vec),len(valence_vec),len(dom_vec))
+
+        if tokenizer_type == "bert-base-uncased":
+            with open("./.preprocessed_data/semeval_preprocessed_bert.pkl", 'wb') as f:
+                pickle.dump(data_dict, f)
+            f.close()
+
+def emoint_preprocess():
+
+    data_dict = {}
+    data_home = "./data/EmoInt/"
+
+    for datatype in ["train","valid","test"]:
+        datafile = data_home + datatype + ".txt"
+        ## cause => tweet, changed for uniformity sake
+        cause,emotion = tweet.preprocess(datafile,dataset)
+
+
+        print("Tokenizing data")
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_type)
+        tokenized_cause =tokenizer.batch_encode_plus(cause).input_ids
+
+        processed_data = {}
+        maximum_utterance = max([len(i) for i in tokenized_cause])
+        average_utterance = np.mean([len(i) for i in tokenized_cause])
+        print(len(cause),len(emotion),len(tokenized_cause))
+        print("Max utterance length:",maximum_utterance,"Avg utterance length:",average_utterance)
+
+
+        ## changed prompt --> cause for uniformity
+        processed_data["tokenized_cause"] = tokenized_cause
+        processed_data["emotion"] = emotion
+        processed_data["cause"] = cause
+
+        arousal_vec,valence_vec,dom_vec = [],[],[]
+        for cause_i in tokenized_cause:
+            arousal_vec.append(get_arousal_vec(tokenizer,cause_i))
+            valence_vec.append(get_valence_vec(tokenizer,cause_i))
+            dom_vec.append(get_dom_vec(tokenizer,cause_i))
+
+
+        processed_data["arousal_data"] = arousal_vec
+        processed_data["valence_data"] = valence_vec
+        processed_data["dom_data"] = dom_vec
+
+        processed_data = pd.DataFrame.from_dict(processed_data)
+        data_dict[datatype] = processed_data
+
+        print(len(emotion),len(tokenized_cause),len(arousal_vec),len(valence_vec),len(dom_vec))
+
+    if tokenizer_type == "bert-base-uncased":
+        with open("./preprocessed_data/emoint_preprocessed_bert.pkl", 'wb') as f:
+            pickle.dump(data_dict, f)
+        f.close()
+
+def isear_preprocess():
+    data = pd.read_csv("./data/ISEAR/ISEAR.csv")
+
+    final_prompt,final_emotion = [],[]
+
+    for i,val in enumerate(data["Field1"]):
+
+        final_prompt.append(data["SIT"][i].replace(f"á\r\n",""))
+        final_emotion.append(isear_label_dict[val])
+
+    print("Tokenizing data")
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_type)
+    tokenized_prompt =tokenizer.batch_encode_plus(final_prompt).input_ids
+
+    processed_data = {}
+    maximum_utterance = max([len(i) for i in tokenized_prompt])
+    average_utterance = np.mean([len(i) for i in tokenized_prompt])
+    print(len(final_prompt),len(final_emotion),len(tokenized_prompt))
+    print("Max utterance length:",maximum_utterance,"Avg utterance length:",average_utterance)
+
+
+    ## changed prompt --> cause for uniformity
+    processed_data["tokenized_cause"] = tokenized_prompt
+    processed_data["emotion"] = final_emotion
+    processed_data["cause"] = final_prompt
+
+    arousal_vec,valence_vec,dom_vec = [],[],[]
+    for cause_i in tokenized_cause:
+        arousal_vec.append(get_arousal_vec(tokenizer,cause_i))
+        valence_vec.append(get_valence_vec(tokenizer,cause_i))
+        dom_vec.append(get_dom_vec(tokenizer,cause_i))
+
+
+    processed_data["arousal_data"] = arousal_vec
+    processed_data["valence_data"] = valence_vec
+    processed_data["dom_data"] = dom_vec
+
+    processed_data = pd.DataFrame.from_dict(processed_data)
+
+    if tokenizer_type == "bert-base-uncased":
+        with open("./preprocessed_data/isear_preprocessed_bert.pkl", 'wb') as f:
+            pickle.dump(processed_data, f)
+        f.close()
 
 if __name__ == '__main__':
 
@@ -192,24 +435,34 @@ if __name__ == '__main__':
 
     parser.add_argument('-t', default="bert-base-uncased",type=str,
                    help='Enter tokenizer type')
+    parser.add_argument('-d', default="goemotions",type=str,
+                   help='Enter dataset')
+
     args = parser.parse_args()
     tokenizer_type = args.t
 
-    train_pdata = data_reader("./.data/raw/empatheticdialogues/","train")
-    valid_pdata = data_reader("./.data/raw/empatheticdialogues/","valid")
-    test_pdata = data_reader("./.data/raw/empatheticdialogues/","test")
+    if args.d == "ed":
+        train_pdata = data_reader("./.data/raw/empatheticdialogues/","train")
+        valid_pdata = data_reader("./.data/raw/empatheticdialogues/","valid")
+        test_pdata = data_reader("./.data/raw/empatheticdialogues/","test")
 
-    train_save_data = tokenize_data(train_pdata,tokenizer_type)
-    valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
-    test_save_data = tokenize_data(test_pdata,tokenizer_type)
+        train_save_data = tokenize_data(train_pdata,tokenizer_type)
+        valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
+        test_save_data = tokenize_data(test_pdata,tokenizer_type)
 
 
-    glove_vocab_size, glove_word_embeddings = get_glove_embedding()
+        glove_vocab_size, glove_word_embeddings = get_glove_embedding()
 
-    if tokenizer_type == "bert-base-uncased":
-        with open('./.preprocessed_data/mid_dataset_preproc.p', "wb") as f:
-            pickle.dump([train_save_data, valid_save_data, test_save_data, glove_vocab_size,glove_word_embeddings], f)
-            print("Saved PICKLE")
+        if tokenizer_type == "bert-base-uncased":
+            with open('./.preprocessed_data/mid_dataset_preproc.p', "wb") as f:
+                pickle.dump([train_save_data, valid_save_data, test_save_data, glove_vocab_size,glove_word_embeddings], f)
+                print("Saved PICKLE")
+    elif args.d == "goemotions":
+        go_emotions_preprocess(tokenizer_type)
+    elif args.d == "semeval":
+        sem_eval_preprocess(tokenizer_type)
+    elif args.d == "emoint":
+        emoint_preprocess(tokenizer_type)
 
 
 

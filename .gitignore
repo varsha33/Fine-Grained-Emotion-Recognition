@@ -14,3 +14,4 @@ comparison.py
 results/
 .preprocessed_data/
 explain.ipynb
+environment.yml

@@ -16,7 +16,7 @@ from torch.utils.data import Dataset
 from transformers import BertTokenizer,AutoTokenizer
 
 ## custom
-import config
+# import config
 
 
 np.random.seed(0)

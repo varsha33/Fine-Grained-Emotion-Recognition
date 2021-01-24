@@ -2,18 +2,16 @@ tokenizer = ""
 input_type = "speaker+listener"
 embedding_type = "bert"
 arch_name = "kbert_bilstm"
-dataset = "ed"
+dataset = "semeval"
 
 learning_rate = 5e-05
 
 batch_size = 10
 
-if dataset == "ed":
-    output_size = 32
-# elif dataset == "goemotions":
-#     output_size = 27
-# elif dataset == "semeval":
-#     output_size = 11
+if dataset == "goemotions":
+    output_size = 27
+elif dataset == "semeval":
+    output_size = 11
 
 hidden_size = 768 # for bert-based models, cannot change as fine-tuning
 

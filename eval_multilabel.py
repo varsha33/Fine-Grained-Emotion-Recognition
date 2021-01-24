@@ -7,7 +7,7 @@ import random
 import numpy as np
 from easydict import EasyDict as edict
 import argparse
-from sklearn.metrics import classification_report,f1_score
+from sklearn.metrics import classification_report,f1_score,precision_recall_fscore_support,average_precision_score,accuracy_score
 import pickle
 
 ## torch packages
@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 ## custom
 from select_model_input import select_model,select_input
 import dataset
-from label_dict import emo_label_map,label_emo_map,class_names,class_indices
+from label_dict import emo_label_map,label_emo_map,class_names,class_indices,goemotions_label_dict,goemotions_emo_dict,semeval_emo_dict,semeval_label_dict
 
 # from xai_emo_rec import explain_model
 # from comparison import do_comparison
@@ -56,16 +56,19 @@ def get_pred_softmax(logits):
     softmax_layer = nn.Softmax(dim=1)
     return softmax_layer(logits)
 
-def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=False):
+def eval_model(model, val_iter, loss_fn,config,arch_name,save_home,mode="train"):
 
     confusion = config.confusion
     per_class = config.per_class
     y_true = []
+    y_score = []
     y_pred = []
     total_epoch_loss = 0
     total_epoch_acc = 0
     total_epoch_acc3 = 0
 
+    sigmoid_layer = nn.Sigmoid()
+    threshold = 0.3 ## taken from the original paper
     eval_batch_size = 1
 
     if confusion:
@@ -77,9 +80,10 @@ def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=Fa
     model.eval()
     with torch.no_grad():
         for idx, batch in enumerate(val_iter):
-            model = model.cuda()
-            text, attn,target = select_input(batch,config,arch_name)
-            target = torch.autograd.Variable(target).long()
+
+            text, attn, target = select_input(batch,config,arch_name)
+            if config.dataset == "ed":
+                target = torch.autograd.Variable(target).long()
 
             if torch.cuda.is_available():
                 if arch_name =="electra" or arch_name == "bert":
@@ -87,54 +91,63 @@ def eval_model(model, val_iter, loss_fn,config,arch_name,mode="train",explain=Fa
                 else:
                     text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
 
+
+                model = model.cuda()
                 attn = attn.cuda()
                 target = target.cuda()
 
+
             prediction = model(text,attn)
 
-            correct = np.squeeze(torch.max(prediction, 1)[1].eq(target.view_as(torch.max(prediction, 1)[1])))
-            pred_ind = torch.max(prediction, 1)[1].view(target.size()).data
+            loss = loss_fn(prediction, target)
 
-            if mode == "explain":
-                pred_softmax = get_pred_softmax(prediction)
-                explain_model(model,text,target.data,batch["utterance_data_str"],pred_ind,pred_softmax) ## use jupyter-notebook while doing explainations
-            else:
-                if confusion:
-                    for t, p in zip(target.data, pred_ind):
-                            conf_matrix[t.long(), p.long()] += 1
-                if per_class:
-                    label = target[0]
-                    class_correct[label] += correct.item()
-                    class_total[label] += 1
+            pred_ind = sigmoid_layer(prediction).detach().cpu().tolist()[0]
 
-                loss = loss_fn(prediction, target)
+            y_score.append(pred_ind)
+            y_pred.append([0 if p <threshold else 1 for p in pred_ind])
+            y_true.append(target.detach().cpu().tolist()[0])
+            total_epoch_loss += loss.item()
 
-                num_corrects = (pred_ind == target.data).sum()
-                y_true.extend(target.data.cpu().tolist())
-                y_pred.extend(pred_ind.cpu().tolist())
+        os.makedirs(save_home,exist_ok=True)
+        raw_result_dict = {"y_true":y_true,"y_score":y_score}
+        f = open(save_home+"/raw_result.pkl",'wb')
+        pickle.dump(raw_result_dict,f)
+        f.close()
 
-                acc = 100.0 * num_corrects/eval_batch_size
-                acc3 = accuracy_topk(prediction, target, topk=(3,))
-                total_epoch_loss += loss.item()
-                total_epoch_acc += acc.item()
-                total_epoch_acc3 += acc3
+        results = {}
+        p,r,f1,_ = precision_recall_fscore_support(y_true, y_pred, average="macro")
 
-        if confusion:
-            import seaborn as sns
-            sns.heatmap(conf_matrix, annot=True,xticklabels=list(emo_label_map.keys()),yticklabels=list(emo_label_map.keys()),cmap='Blues')
+        results["precision"] = p
+        results["recall"] = r
+        results["f1"] = f1
 
-            plt.show()
-        if per_class:
-            for i in range(config.output_size):
-                print('Test Accuracy of %5s: %2d%% (%2d/%2d)' % (
-                label_emo_map[i], 100 * class_correct[i] / class_total[i],
-                np.sum(class_correct[i]), np.sum(class_total[i])))
+        y_true = np.array([np.array(i) for i in y_true])
+        y_pred = np.array([np.array(i) for i in y_pred])
 
-    if mode != "explain":
+        # print(y_true[:5,:],y_pred[:5,:])
+        if config.dataset == "goemotions":
+            for i in range(27):
+                emotion = goemotions_emo_dict[i]
+                emotion_true = y_true[:, i]
+                emotion_pred = y_pred[:, i]
+                # print(emotion_true,emotion_pred)
+                results[emotion + "_accuracy"] = accuracy_score(emotion_true, emotion_pred)
+                results[emotion + "_precision"], results[emotion + "_recall"], results[emotion + "_f1"], _ = precision_recall_fscore_support(
+                        emotion_true, emotion_pred, average="binary")
+        elif config.dataset == "semeval":
+            for i in range(11):
+                emotion = semeval_emo_dict[i]
+                emotion_true = y_true[:, i]
+                emotion_pred = y_pred[:, i]
+                # print(emotion_true,emotion_pred)
+                results[emotion + "_accuracy"] = accuracy_score(emotion_true, emotion_pred)
+                results[emotion + "_precision"], results[emotion + "_recall"], results[emotion + "_f1"], _ = precision_recall_fscore_support(
+                        emotion_true, emotion_pred, average="binary")
 
-        f1_score_e = f1_score(y_true, y_pred, labels=class_indices,average='macro')
-        f1_score_w = f1_score(y_true, y_pred, labels=class_indices,average='weighted')
-        return total_epoch_loss/len(val_iter), total_epoch_acc/len(val_iter),f1_score_e,f1_score_w,total_epoch_acc3/len(val_iter)
+    return total_epoch_loss/len(val_iter),results
+
+
+
 
 
 
