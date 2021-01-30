@@ -12,8 +12,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset
 from transformers import BertTokenizer,AutoTokenizer
 
-## custom
-# from embedding import get_glove_embedding
+
 
 
 np.random.seed(0)

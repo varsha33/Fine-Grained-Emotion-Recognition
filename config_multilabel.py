@@ -1,10 +1,10 @@
 tokenizer = ""
-input_type = "speaker+listener"
-embedding_type = "bert"
-arch_name = "kbert_bilstm"
+input_type = ""
+embedding_type = ""
+arch_name = "kea_bert_word"
 dataset = "semeval"
 
-learning_rate = 5e-05
+learning_rate = 3e-05
 
 batch_size = 10
 
@@ -17,9 +17,9 @@ hidden_size = 768 # for bert-based models, cannot change as fine-tuning
 
 embedding_length = None
 
-step_size = 2
+step_size = 6
 start_epoch = 0 # for start training
-nepoch = 5
+nepoch = 6
 patience = 30
 
 # Accuracy display

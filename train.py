@@ -188,7 +188,14 @@ if __name__ == '__main__':
 
 	## Initialising parameters from train_config
 
-		for lr in [1e-05,2e-05,3e-05]: ## for tuning
+		for lr in [3e-05]: ## for tuning
+
+			np.random.seed(0)
+			random.seed(0)
+			torch.manual_seed(0)
+			torch.cuda.manual_seed(0)
+			torch.cuda.manual_seed_all(0)
+
 			learning_rate = lr
 			arch_name = train_config.arch_name
 			log_dict["param"]["learning_rate"] = lr

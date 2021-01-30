@@ -1,7 +1,7 @@
 import torch
 
 ## custom-
-from models.model import Electra_BERT,BERT,KEA_BERT,KEA_Electra,KBERT_BiLSTM,KBERT_BiLSTMwSA, Knowledge_baseline
+from models.model import ELECTRA,KEA_ELECTRA, KEA_Electra_Word_level,KEA_Bert_Word_level
 from transformers.configuration_bert import BertConfig as config
 
 def select_model(config,arch_name,vocab_size=None,word_embeddings=None,grad_check=True):
@@ -17,17 +17,15 @@ def select_model(config,arch_name,vocab_size=None,word_embeddings=None,grad_chec
     if arch_name == "bert":
         model = BERT(batch_size,output_size,hidden_size,grad_check)
     if arch_name == "electra":
-        model = Electra_BERT(batch_size,output_size,hidden_size,grad_check)
+        model = ELECTRA(batch_size,output_size,hidden_size,grad_check)
     if arch_name == "kea_electra":
-        model = KEA_Electra(batch_size,output_size,hidden_size,grad_check)
+        model = KEA_ELECTRA(batch_size,output_size,hidden_size,grad_check)
     if arch_name == "kea_bert":
         model = KEA_BERT(batch_size,output_size,hidden_size,grad_check)
-    if arch_name == "kbase":
-        model = KBERT_BiLSTM(batch_size,output_size,hidden_size,grad_check)
-    if arch_name == "kbert_bilstm":
-        model = KBERT_BiLSTM(batch_size,output_size,hidden_size,grad_check)
-    if arch_name == "kbert_bilstmwsa":
-        model = KBERT_BiLSTMwSA(batch_size,output_size,hidden_size,grad_check)
+    if arch_name == "kea_electra_word":
+        model = KEA_Electra_Word_level(batch_size,output_size,hidden_size,grad_check)
+    if arch_name == "kea_bert_word":
+        model = KEA_Bert_Word_level(batch_size,output_size,hidden_size,grad_check)
     return model
 
 

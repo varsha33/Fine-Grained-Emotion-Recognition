@@ -15,3 +15,4 @@ results/
 .preprocessed_data/
 explain.ipynb
 environment.yml
+anthology.bib

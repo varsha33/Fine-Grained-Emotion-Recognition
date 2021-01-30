@@ -176,8 +176,8 @@ if __name__ == '__main__':
 
 	## Initialising parameters from train_config
 
-		for arch_name in ["kea_bert","kea_electra"]:
-			for lr in [1e-05,2e-05,3e-05]: ## for tuning
+		for arch_name in ["kea_electra"]:
+			for lr in [3e-05]: ## for tuning
 
 				np.random.seed(0)
 				random.seed(0)
