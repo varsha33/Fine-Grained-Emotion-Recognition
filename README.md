@@ -40,7 +40,11 @@ License <https://github.com/prakashpandey9/Text-Classification-Pytorch/blob/mast
 2. Project:EmpatheticDialogues <https://github.com/facebookresearch/EmpatheticDialogues>
 License <https://github.com/facebookresearch/EmpatheticDialogues/blob/master/LICENSE>
 
-3. Project:MoEL <https://github.com/HLTCHKUST/MoEL>
+3. Project:GoEmotions <https://github.com/google-research/google-research/tree/master/goemotions>
+
+4. Dataset:Affect in Tweets <https://competitions.codalab.org/competitions/17751#learn_the_details-datasets>
+
+5. Project:MoEL <https://github.com/HLTCHKUST/MoEL>
 License <https://github.com/HLTCHKUST/MoEL/blob/master/LICENSE>
 
 
