@@ -26,25 +26,15 @@ import dataset
 import config_multilabel as train_config
 from label_dict import label_emo_map
 
-np.random.seed(0)
-random.seed(0)
-torch.manual_seed(0)
-torch.cuda.manual_seed(0)
-torch.cuda.manual_seed_all(0)
 
-
-
-def save_checkpoint(state, is_best,filename='checkpoint.pth.tar'):
-	torch.save(state,filename)
+def save_checkpoint(state, is_best,filename):
 	if is_best:
-		shutil.copyfile(filename,filename.replace('checkpoint.pth.tar','model_best.pth.tar'))
+		torch.save(state,filename)
 
 def clip_gradient(model, clip_value):
 	params = list(filter(lambda p: p.grad is not None, model.parameters()))
 	for p in params:
 		p.grad.data.clamp_(-clip_value, clip_value)
-
-
 
 def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
 
@@ -54,6 +44,8 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
 	steps = 0
 	model.train()
 	start_train_time = time.time()
+
+
 	for idx, batch in enumerate(train_iter):
 
 		text, attn, target = select_input(batch,config,arch_name)
@@ -62,10 +54,7 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
 			continue
 
 		if torch.cuda.is_available():
-			if arch_name =="electra" or arch_name == "bert":
-				text = text.cuda()
-			else:
-				text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
+			text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
 
 			attn = attn.cuda()
 			target = target.cuda()
@@ -104,7 +93,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 	train_iter,valid_iter,test_iter = data[0],data[1],data[2] # data is a tuple of three iterators
 
 	# print("Start Training")
-	for epoch in range(config.start_epoch,config.nepoch):
+	for epoch in range(0,config.nepoch):
 
 		## train and validation
 
@@ -120,7 +109,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 		## save best model
 		is_best = val_result["f1"] > best_f1_score
 
-		# save_checkpoint({'epoch': epoch + 1,'arch': arch_name,'state_dict': model.state_dict(),'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
+		save_checkpoint({'epoch': epoch + 1,'arch': arch_name,'state_dict': model.state_dict(),'train_loss':train_loss,"val_result":val_result,'param':config,'optimizer' : optimizer.state_dict(),},is_best,save_home+"/model_best.pth.tar")
 
 		best_f1_score = max(val_result["f1"], best_f1_score)
 		if config.step_size != None:
@@ -128,7 +117,6 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 
 		## save logs
 		if is_best:
-			print("X")
 
 			patience_flag = 0
 
@@ -140,8 +128,6 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 			log_dict["valid_loss"] = val_loss
 
 			log_dict["epoch"] = epoch+1
-
-
 
 			with open(save_home+"/log.json", 'w') as fp:
 				json.dump(log_dict, fp,indent=4)
@@ -157,27 +143,17 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 
 if __name__ == '__main__':
 
-	# note = "without dom" ## to note any changes
+
 	log_dict = {}
 	log_dict["param"] = train_config.param
-	print(train_config.learning_rate)
-	print(train_config.arch_name)
-	print(train_config.batch_size)
-	## Loading data
-	print('Loading dataset')
-	start_time = time.time()
-	vocab_size, word_embeddings,train_iter, valid_iter ,test_iter= dataset.get_dataloader(train_config.batch_size,train_config.tokenizer,train_config.dataset,train_config.arch_name)
 
-	data = (train_iter,valid_iter,test_iter)
-	finish_time = time.time()
-	print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))
 
 	if train_config.tuning:
 
 	## Initialising parameters from train_config
 
 		for arch_name in ["kea_electra"]:
-			for lr in [3e-05]: ## for tuning
+			for learning_rate in [3e-05]: ## for tuning
 
 				np.random.seed(0)
 				random.seed(0)
@@ -185,22 +161,23 @@ if __name__ == '__main__':
 				torch.cuda.manual_seed(0)
 				torch.cuda.manual_seed_all(0)
 
-				learning_rate = lr
-				arch_name = arch_name
-				log_dict["param"]["learning_rate"] = lr
-				log_dict["param"]["arch_name"] = arch_name
-				note = "Tuning learning_rate:"+str(lr)
+				## Loading data
+				print('Loading dataset')
+				start_time = time.time()
+				train_iter, valid_iter ,test_iter= dataset.get_dataloader(train_config.batch_size,train_config.tokenizer,train_config.dataset,arch_name)
 
-				# learning_rate = train_config.learning_rate
-				input_type = train_config.input_type
+				data = (train_iter,valid_iter,test_iter)
+				finish_time = time.time()
+				print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))
+
+
+				log_dict["param"]["learning_rate"] = learning_rate
+				log_dict["param"]["arch_name"] = arch_name
 
 				## Initialising model, loss, optimizer, lr_scheduler
-				model = select_model(train_config,arch_name,vocab_size,word_embeddings)
+				model = select_model(train_config,arch_name)
 
-				if train_config.dataset == "ed":
-					loss_fn = nn.CrossEntropyLoss()
-				else:
-					loss_fn = nn.BCEWithLogitsLoss()
+				loss_fn = nn.BCEWithLogitsLoss()
 
 				total_steps = len(train_iter) * train_config.nepoch
 
@@ -217,6 +194,22 @@ if __name__ == '__main__':
 				# print(train_config)
 				train_model(train_config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_home)
 	else:
+
+		np.random.seed(0)
+		random.seed(0)
+		torch.manual_seed(0)
+		torch.cuda.manual_seed(0)
+		torch.cuda.manual_seed_all(0)
+
+		## Loading data
+		print('Loading dataset')
+		start_time = time.time()
+		train_iter, valid_iter ,test_iter= dataset.get_dataloader(train_config.batch_size,train_config.tokenizer,train_config.dataset,arch_name)
+
+		data = (train_iter,valid_iter,test_iter)
+		finish_time = time.time()
+		print('Finished loading. Time taken:{:06.3f} sec'.format(finish_time-start_time))
+
 		learning_rate = train_config.learning_rate
 
 		arch_name = train_config.arch_name
@@ -224,25 +217,20 @@ if __name__ == '__main__':
 		input_type = train_config.input_type
 
 		## Initialising model, loss, optimizer, lr_scheduler
-		model = select_model(train_config,arch_name,vocab_size,word_embeddings)
+		model = select_model(train_config,arch_name)
 
-		if train_config.dataset == "ed":
-			loss_fn = nn.CrossEntropyLoss()
-		else:
-			loss_fn = nn.BCEWithLogitsLoss()
+		loss_fn = nn.BCEWithLogitsLoss()
 
 		total_steps = len(train_iter) * train_config.nepoch
 
 		optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
 
-
-		lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
-
-
+		if train_config.step_size != None:
+			lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
 
 		## Filepaths for saving the model and the tensorboard runs
 		model_run_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
-		writer = SummaryWriter('./runs/'+input_type+"/"+arch_name+"/")
-		save_home = "./save/"+train_config.dataset+"/"+input_type+"/"+arch_name+"/"+model_run_time
+		writer = SummaryWriter("./runs/"+arch_name+"/")
+		save_home = "./save/"+train_config.dataset+"/"+arch_name+"/"+model_run_time
 
 		train_model(train_config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_home)

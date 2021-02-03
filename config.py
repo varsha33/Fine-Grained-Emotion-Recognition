@@ -15,7 +15,7 @@ hidden_size = 768 # for bert-based models, cannot change as fine-tuning
 
 embedding_length = None
 
-step_size = 2
+step_size = 10
 start_epoch = 0 # for start training
 nepoch = 6
 patience = 30

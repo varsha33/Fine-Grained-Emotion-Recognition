@@ -10,7 +10,7 @@ from torch.utils import checkpoint
 from transformers import ElectraForSequenceClassification,BertForSequenceClassification
 from torch.autograd import Variable
 from torch.nn import functional as F
-# from torch.nn import TransformerEncoder, TransformerEncoderLayer
+
 
 
 np.random.seed(0)
@@ -20,22 +20,6 @@ torch.cuda.manual_seed(0)
 torch.cuda.manual_seed_all(0)
 
 import time
-
-
-class BERT(nn.Module):
-
-    def __init__(self,batch_size,output_size,hidden_size,grad_check):
-        super(BERT, self).__init__()
-
-        options_name = "bert-base-uncased"
-        self.encoder = BertForSequenceClassification.from_pretrained(options_name,num_labels=output_size)
-
-
-    def forward(self, text,attn_mask): #here text is utterance based on the input type specified
-
-        text_fea = self.encoder(text,attn_mask,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
-
-        return text_fea.logits
 
 
 class KEA_BERT(nn.Module):
@@ -92,21 +76,6 @@ class KEA_BERT(nn.Module):
 
         return logits
 
-
-class ELECTRA(nn.Module):
-
-    def __init__(self,batch_size,output_size,hidden_size,grad_check):
-        super(ELECTRA, self).__init__()
-
-        options_name = "google/electra-base-discriminator"
-        self.encoder = ElectraForSequenceClassification.from_pretrained(options_name,num_labels=output_size)
-
-
-    def forward(self, text,attn_mask): #here text is utterance based on the input type specified
-
-        text_fea = self.encoder(text,attn_mask,output_hidden_states=True,return_dict=True) # no labels provided, output attention and output hidden states = False
-
-        return text_fea.logits
 
 
 class KEA_ELECTRA(nn.Module):
@@ -265,9 +234,6 @@ class KEA_Bert_Word_level(nn.Module):
         h_0 = Variable(torch.zeros(2, input.size()[0],int(self.hidden_size/2)).cuda())
         c_0 = Variable(torch.zeros(2, input.size()[0],int(self.hidden_size/2)).cuda())
 
-        # word_query = F.relu(self.word_level_encoder(word_query))
-        # print(word_query.size())
-
         word_query = word_query.permute(1, 0, 2)
 
         output, (h_n, c_n) = self.bilstm(word_query, (h_0, c_0))
@@ -280,3 +246,9 @@ class KEA_Bert_Word_level(nn.Module):
         logits = self.label(output)
 
         return logits
+
+
+
+
+
+

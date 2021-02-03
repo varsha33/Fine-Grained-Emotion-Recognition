@@ -64,11 +64,7 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,config):
 			continue
 
 		if torch.cuda.is_available():
-			if arch_name =="electra" or arch_name == "bert":
-				text = text.cuda()
-			else:
-				text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
-
+			text = [text[0].cuda(),text[1].cuda(),text[2].cuda(),text[3].cuda()]
 			attn = attn.cuda()
 			target = target.cuda()
 
@@ -109,7 +105,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 	train_iter,valid_iter,test_iter = data[0],data[1],data[2] # data is a tuple of three iterators
 
 	# print("Start Training")
-	for epoch in range(config.start_epoch,config.nepoch):
+	for epoch in range(0,config.nepoch):
 
 		## train and validation
 		train_loss, train_acc = train_epoch(model, train_iter, epoch,loss_fn,optimizer,config)
@@ -123,6 +119,7 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 		## save best model
 		is_best = val_acc > best_acc1
 		os.makedirs(save_home,exist_ok=True)
+
 		save_checkpoint({'epoch': epoch + 1,'arch': arch_name,'state_dict': model.state_dict(),'train_acc':train_acc,"val_acc":val_acc,'param':log_dict["param"],'optimizer' : optimizer.state_dict(),},is_best,save_home+"/checkpoint.pth.tar")
 
 		best_acc1 = max(val_acc, best_acc1)
@@ -143,12 +140,17 @@ def train_model(config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_hom
 			log_dict["train_acc"] = train_acc
 			log_dict["test_acc"] = test_acc
 			log_dict["valid_acc"] = val_acc
+
 			log_dict["test_f1_score"] = test_f1_score
 			log_dict["valid_f1_score"] = val_f1_score
-			log_dict["top3_acc"] = test_top3_acc
+
+			log_dict["valid_top3_acc"] = val_top3_acc
+			log_dict["test_top3_acc"] = test_top3_acc
+
 			log_dict["train_loss"] = train_loss
 			log_dict["test_loss"] = test_loss
 			log_dict["valid_loss"] = val_loss
+
 			log_dict["epoch"] = epoch+1
 			log_dict["note"] = note
 			log_dict["weighted_test_f1_score"] = test_w_f1_score
@@ -186,9 +188,7 @@ if __name__ == '__main__':
 
 	if train_config.tuning:
 
-	## Initialising parameters from train_config
-
-		for lr in [3e-05]: ## for tuning
+		for learning_rate  in [3e-05]: ## for tuning
 
 			np.random.seed(0)
 			random.seed(0)
@@ -196,20 +196,14 @@ if __name__ == '__main__':
 			torch.cuda.manual_seed(0)
 			torch.cuda.manual_seed_all(0)
 
-			learning_rate = lr
-			arch_name = train_config.arch_name
-			log_dict["param"]["learning_rate"] = lr
-			log_dict["param"]["arch_name"] = arch_name
-			note = "Tuning learning_rate:"+str(lr)
 
-			# learning_rate = train_config.learning_rate
-			input_type = train_config.input_type
+			arch_name = train_config.arch_name
+			log_dict["param"]["learning_rate"] = learning_rate
+			log_dict["param"]["arch_name"] = arch_name
 
 			## Initialising model, loss, optimizer, lr_scheduler
 			model = select_model(train_config,arch_name,vocab_size,word_embeddings)
 			loss_fn = nn.CrossEntropyLoss()
-			total_steps = len(train_iter) * train_config.nepoch
-
 			optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
 			if train_config.step_size != None:
 				lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
@@ -218,37 +212,27 @@ if __name__ == '__main__':
 			## Filepaths for saving the model and the tensorboard runs
 			model_run_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
 			writer = SummaryWriter('./runs/'+input_type+"/"+arch_name+"/")
-			save_home = "./save/"+train_config.dataset+"/"+input_type+"/"+arch_name+"/"+model_run_time
+			save_home = "./save/"+train_config.dataset+"/"+arch_name+"/"+model_run_time
 
 
 			train_model(train_config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_home)
 	else:
 		learning_rate = train_config.learning_rate
 
-		arch_name = train_config.arch_name
-
-		input_type = train_config.input_type
-
 		## Initialising model, loss, optimizer, lr_scheduler
 		model = select_model(train_config,arch_name,vocab_size,word_embeddings)
 
-		if train_config.dataset != "goemotions":
-			loss_fn = nn.CrossEntropyLoss()
-		else:
-			loss_fn = nn.BCEWithLogitsLoss()
 
-		total_steps = len(train_iter) * train_config.nepoch
+		loss_fn = nn.CrossEntropyLoss()
 
 		optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),lr=learning_rate)
 
-
-		lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
-
-
+		if train_config.step_size != None:
+			lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,train_config.step_size, gamma=0.5)
 
 		## Filepaths for saving the model and the tensorboard runs
 		model_run_time = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
 		writer = SummaryWriter('./runs/'+input_type+"/"+arch_name+"/")
-		save_home = "./save/"+train_config.dataset+"/"+input_type+"/"+arch_name+"/"+model_run_time
+		save_home = "./save/"+train_config.dataset+"/"+arch_name+"/"+model_run_time
 
 		train_model(train_config,data,model,loss_fn,optimizer,lr_scheduler,writer,save_home)
