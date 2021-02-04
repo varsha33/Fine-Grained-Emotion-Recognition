@@ -9,7 +9,9 @@ python preprocess.py
 ```
 Note: For EmpatheticDialogue dataset, please use ed_data_extract.py to transform the data before preprocessing. 
 
-For training the model, go to config.py to set the required parameters. The training for this work was done entirely in Google Colab due to resource requirements. Use kea_colab_notebook for single label setting and multilabel_kea_colab notebook for multilabel settings. 
+For training the model, go to config.py/config_multilabel.py to set the required parameters. 
+
+The training for this work was done entirely in Google Colab due to resource requirements. Use kea_singlelabel_colab_notebook for single label setting and kea_multilabel_colab notebook for multilabel settings. 
 
 ### Alternative
 
@@ -17,11 +19,6 @@ Follow the below instructions to use the python scripts
 
 ```
 python train.py
-```
-For evalutaion run the below code with "eval" mode. The other modes are "retrain" and "explain" which are in progress.
-
-```
-python eval.py -r <model path> -m <mode>
 ```
 
 ## Requirements
