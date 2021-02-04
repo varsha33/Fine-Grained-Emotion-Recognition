@@ -7,6 +7,8 @@ For data preprocessing, run the following command
 ```
 python preprocess.py
 ```
+Note: For EmpatheticDialogue dataset, please use ed_data_extract.py to transform the data before preprocessing. 
+
 For training the model, go to config.py to set the required parameters. The training for this work was done entirely in Google Colab due to resource requirements. Use kea_colab_notebook for single label setting and multilabel_kea_colab notebook for multilabel settings. 
 
 ### Alternative

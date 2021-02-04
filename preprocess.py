@@ -14,7 +14,7 @@ import collections
 
 ## custom packages
 from extract_lexicon import get_arousal_vec,get_valence_vec,get_dom_vec
-from utils import flatten_list
+from utils import flatten_list,tweet_preprocess
 
 
 emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, 'sad': 5, 'grateful': 6, 'lonely': 7,
@@ -138,7 +138,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
     tokenized_total_data,tokenized_speaker,tokenized_listener = [],[],[]
     tokenized_list_data,tokenized_turn_data = [],[]
     arousal_data,valence_data,dom_data = [],[],[]
-    glove_data = []
+
     for u,val_utterance in enumerate(processed_data["utterance_data_list"]): #val utterance is one conversation which has multiple utterances
 
         tokenized_i= tokenizer.batch_encode_plus(val_utterance,add_special_tokens=False)["input_ids"]
@@ -146,7 +146,6 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
         speaker_utterance,listener_utterance,speaker_iutterance,listener_iutterance,total_utterance = [101],[101],[101],[101],[101]
 
         total_utterance_list = []
-        # glove_vec = []
 
         for s,val_speaker in enumerate(tokenized_i): ## for each utterance inside a conversation
 
@@ -162,7 +161,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 
             total_utterance.extend(val_speaker+[102])
             total_utterance_list.append(val_speaker+[102])
-            # glove_vec.extend(get_glove_vec(val_utterance[s]))
+
 
         turn_data = [[101]+a+b for a, b in zip(total_utterance_list[::2],total_utterance_list[1::2])] # turnwise data, [[s1],[l1],[s2],[l2],..] --> [[s1;l1],[s2;l2],..]
 
@@ -186,7 +185,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
         arousal_data.append(arousal_vec)
         valence_data.append(valence_vec)
         dom_data.append(dom_vec)
-        # glove_data.append(glove_vec)
+
 
     assert len(tokenized_list_data) == len(tokenized_turn_data) ==len(tokenized_inter_speaker) == len(tokenized_inter_listener) == len(tokenized_total_data) ==len(tokenized_listener) ==len(tokenized_speaker) == len(processed_data["emotion"]) == len(tokenized_total_data) == len(arousal_data) == len(valence_data) == len(dom_data)
 
@@ -266,38 +265,9 @@ def sem_eval_preprocess(tokenizer_type):
         count = 0
 
         for i,x_i in enumerate(X):
-            # print(i)
 
-        #   ## remove non_ascii like emojis etc
-            x_proc_i= [''.join([i if ord(i) < 128 else '' for i in text]) for text in x_i]
-            x_proc_i = "".join(x_proc_i).replace(r'(RT|rt)[ ]*@[ ]*[\S]+',r'')
-
-            ##
-            ## <https... or www... --> URL
-            x_proc_i = re.sub(r'((www\.[\S]+)|(https?://[\S]+))', ' URL ',x_proc_i)
-
-            ## @<handle> --> USER_MENTION
-            x_proc_i = re.sub(r'@[\S]+', 'USER_MENTION', x_proc_i)
-
-            ## &amp; --> and
-            x_proc_i = x_proc_i.replace(r'&amp;',r'and')
-
-            ## #<hastag> --> <hastag>
-            x_proc_i = re.sub(r'#(\S+)', r' \1 ', x_proc_i)
-
-            ## remove rt --> space
-            x_proc_i = re.sub(r'\brt\b', '', x_proc_i)
-
-            ## remove more than 2 dots (..) --> space
-            x_proc_i = re.sub(r'\.{2,}', ' ', x_proc_i)
-
-            x_proc_i = x_proc_i.strip(' "\'')
-
-            ## remove multiple space with single space
-            x_proc_i = re.sub(r'\s+', ' ', x_proc_i)
-
-
-            cause.append(x_proc_i)
+            ## Affect in Tweets preprocessing in the utils.py
+            cause.append(tweet_preprocess(x_proc_i))
             emotion.append(y[i])
 
         print("Tokenizing data")
@@ -337,8 +307,6 @@ def sem_eval_preprocess(tokenizer_type):
                 pickle.dump(data_dict, f)
             f.close()
 
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Enter tokenizer type')
@@ -360,8 +328,8 @@ if __name__ == '__main__':
         valid_save_data = tokenize_data(valid_pdata,tokenizer_type)
         test_save_data = tokenize_data(test_pdata,tokenizer_type)
 
-
-        glove_vocab_size = 0 ## used previously during model design
+        ## used previously during model design
+        glove_vocab_size = 0
         glove_word_embeddings = []
 
         if tokenizer_type == "bert-base-uncased":

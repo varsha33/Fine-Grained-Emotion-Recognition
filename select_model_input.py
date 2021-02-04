@@ -2,19 +2,20 @@ import torch
 
 ## custom-
 from models.model import KEA_ELECTRA, KEA_Electra_Word_level,KEA_Bert_Word_level,KEA_BERT
-from transformers.configuration_bert import BertConfig as config
 
-def select_model(config,arch_name,vocab_size=None,word_embeddings=None):
+
+## config here is log_dict.param
+def select_model(config):
 
     batch_size = config.batch_size
     hidden_size = config.hidden_size
-    embedding_length = config.embedding_length
     output_size = config.output_size
+    arch_name = config.arch_name
 
     if arch_name == "kea_electra":
-        model = KEA_ELECTRA(batch_size,output_size,hidden_size,grad_check)
+        model = KEA_ELECTRA(batch_size,output_size,hidden_size)
     if arch_name == "kea_bert":
-        model = KEA_BERT(batch_size,output_size,hidden_size,grad_check)
+        model = KEA_BERT(batch_size,output_size,hidden_size)
     if arch_name == "kea_electra_word":
         model = KEA_Electra_Word_level(batch_size,output_size,hidden_size)
     if arch_name == "kea_bert_word":
@@ -23,10 +24,10 @@ def select_model(config,arch_name,vocab_size=None,word_embeddings=None):
 
 
 
-def select_input(batch,config,arch_name):
+def select_input(batch,config):
 
-    input_type = config.input_type
     dataset = config.dataset
+    arch_name = config.arch_name
 
     text = [batch["utterance_data"],batch["arousal_data"],batch["valence_data"],batch["dom_data"]]
     attn = batch["utterance_data_attn_mask"]

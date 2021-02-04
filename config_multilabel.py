@@ -1,4 +1,4 @@
-arch_name = "kea_electra"
+arch_name = "kea_electra_word"
 dataset = "semeval"
 
 learning_rate = 3e-05
@@ -24,6 +24,6 @@ confusion = False #confusion matrix
 per_class = False # per class accuracy
 
 
-param = {"arch_name":arch_name,"learning_rate":learning_rate,"batch_size":batch_size,"hidden_size":hidden_size,"embedding_length":embedding_length,"output_size":output_size,"step_size":step_size,"freeze":False,"dataset":dataset}
+param = {"arch_name":arch_name,"learning_rate":learning_rate,"batch_size":batch_size,"hidden_size":hidden_size,"embedding_length":embedding_length,"output_size":output_size,"step_size":step_size,"freeze":False,"dataset":dataset,"nepoch":nepoch,"patience":patience}
 
-tuning = True
+tuning = False ## if tuning == True, add the parameter list in train.py

@@ -10,13 +10,6 @@ import pickle
 import torch
 from torch.nn import functional as F
 from torch.utils.data import Dataset
-from transformers import BertTokenizer,AutoTokenizer
-
-np.random.seed(0)
-random.seed(0)
-torch.manual_seed(0)
-torch.cuda.manual_seed(0)
-torch.cuda.manual_seed_all(0)
 
 
 class ED_dataset(Dataset):
@@ -25,9 +18,7 @@ class ED_dataset(Dataset):
 
         self.data = data
 
-
     def __getitem__(self, index):
-
 
         item = {}
 
@@ -141,7 +132,6 @@ def collate_fn(data):
 
     d = {}
 
-
     d["arousal_data"] = ainput_batch
     d["valence_data"] = vinput_batch
     d["dom_data"] = dinput_batch
@@ -155,7 +145,7 @@ def collate_fn(data):
 
     return d
 
-def get_dataloader(batch_size,tokenizer,dataset,arch_name):
+def get_dataloader(batch_size,dataset,arch_name):
 
     if dataset == "ed":
 

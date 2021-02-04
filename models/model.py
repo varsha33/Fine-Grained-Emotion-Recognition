@@ -10,21 +10,12 @@ from torch.utils import checkpoint
 from transformers import ElectraForSequenceClassification,BertForSequenceClassification
 from torch.autograd import Variable
 from torch.nn import functional as F
-
-
-
-np.random.seed(0)
-random.seed(0)
-torch.manual_seed(0)
-torch.cuda.manual_seed(0)
-torch.cuda.manual_seed_all(0)
-
 import time
 
 
 class KEA_BERT(nn.Module):
 
-    def __init__(self,batch_size,output_size,hidden_size,grad_check):
+    def __init__(self,batch_size,output_size,hidden_size):
         super(KEA_BERT, self).__init__()
 
 
@@ -80,7 +71,7 @@ class KEA_BERT(nn.Module):
 
 class KEA_ELECTRA(nn.Module):
 
-    def __init__(self,batch_size,output_size,hidden_size,grad_check):
+    def __init__(self,batch_size,output_size,hidden_size):
         super(KEA_ELECTRA, self).__init__()
 
 
@@ -124,7 +115,6 @@ class KEA_ELECTRA(nn.Module):
         dom_encoder = F.relu(self.d(text[3]))
 
         input = torch.cat((input,arousal_encoder.unsqueeze(1),valence_encoder.unsqueeze(1),dom_encoder.unsqueeze(1)),dim=1)
-        # input = self.layernorm(input)
         output = self.attention_net(input,cls_input)
         output = F.relu(self.fc1(output))
         output = self.dropout(output)
@@ -135,7 +125,7 @@ class KEA_ELECTRA(nn.Module):
 
 class KEA_Electra_Word_level(nn.Module):
 
-    def __init__(self,batch_size,output_size,hidden_size,grad_check):
+    def __init__(self,batch_size,output_size,hidden_size):
         super(KEA_Electra_Word_level, self).__init__()
 
 
@@ -171,7 +161,8 @@ class KEA_Electra_Word_level(nn.Module):
         cls_input = input[:,0,:]
         # print(input.size())
         # print(text[1][:,:input.size()[1]].size())
-        word_query = torch.cat((input,text[1][:,:input.size()[1]].unsqueeze(2),text[2][:,:input.size()[1]].unsqueeze(2),text[3][:,:input.size()[1]].unsqueeze(2)),dim=2)
+        seq_len = input.size()[1]
+        word_query = torch.cat((input,text[1][:,:seq_len].unsqueeze(2),text[2][:,:seq_len].unsqueeze(2),text[3][:,:seq_len].unsqueeze(2)),dim=2)
 
 
         h_0 = Variable(torch.zeros(2, input.size()[0],int(self.hidden_size/2)).cuda())
@@ -183,7 +174,6 @@ class KEA_Electra_Word_level(nn.Module):
         output, (h_n, c_n) = self.bilstm(word_query, (h_0, c_0))
 
         output = output.permute(1, 0, 2)
-        # # input = self.layernorm(input)
         output = self.attention_net(output,cls_input)
         output = F.relu(self.fc1(output))
         output = self.dropout(output)
@@ -193,7 +183,7 @@ class KEA_Electra_Word_level(nn.Module):
 
 class KEA_Bert_Word_level(nn.Module):
 
-    def __init__(self,batch_size,output_size,hidden_size,grad_check):
+    def __init__(self,batch_size,output_size,hidden_size):
         super(KEA_Bert_Word_level, self).__init__()
 
 
@@ -227,8 +217,9 @@ class KEA_Bert_Word_level(nn.Module):
         input = self.encoder(text[0],attn_mask,output_hidden_states=True,return_dict=True).hidden_states[-1]
 
         cls_input = input[:,0,:]
+        seq_len = input.size()[1]
 
-        word_query = torch.cat((input,text[1][:,:input.size()[1]].unsqueeze(2),text[2][:,:input.size()[1]].unsqueeze(2),text[3][:,:input.size()[1]].unsqueeze(2)),dim=2)
+        word_query = torch.cat((input,text[1][:,:seq_len].unsqueeze(2),text[2][:,:seq_len].unsqueeze(2),text[3][:,:seq_len].unsqueeze(2)),dim=2)
 
 
         h_0 = Variable(torch.zeros(2, input.size()[0],int(self.hidden_size/2)).cuda())
@@ -239,7 +230,6 @@ class KEA_Bert_Word_level(nn.Module):
         output, (h_n, c_n) = self.bilstm(word_query, (h_0, c_0))
 
         output = output.permute(1, 0, 2)
-        # # input = self.layernorm(input)
         output = self.attention_net(output,cls_input)
         output = F.relu(self.fc1(output))
         output = self.dropout(output)
