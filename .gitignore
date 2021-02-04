@@ -17,3 +17,4 @@ explain.ipynb
 environment.yml
 anthology.bib
 embedding.py
+.data/

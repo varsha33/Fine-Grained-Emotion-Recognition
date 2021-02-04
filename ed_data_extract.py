@@ -5,13 +5,8 @@ import numpy as np
 import pickle
 import collections
 import matplotlib.pyplot as plt
+from label_dict import ed_label_dict, ed_emo_dict
 
-emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, 'sad': 5, 'grateful': 6, 'lonely': 7,
-    'impressed': 8, 'afraid': 9, 'disgusted': 10, 'confident': 11, 'terrified': 12, 'hopeful': 13, 'anxious': 14, 'disappointed': 15,
-    'joyful': 16, 'prepared': 17, 'guilty': 18, 'furious': 19, 'nostalgic': 20, 'jealous': 21, 'anticipating': 22, 'embarrassed': 23,
-    'content': 24, 'devastated': 25, 'sentimental': 26, 'caring': 27, 'trusting': 28, 'ashamed': 29, 'apprehensive': 30, 'faithful': 31}
-
-emo_map_inverse =  {v: k for k, v in emo_map.items()}
 
 def get_speaker_info(speaker_id):
     if int(speaker_id) % 2 == 0:
@@ -109,7 +104,7 @@ def extract_data_stats():
         df = pd.read_csv(data_home)
         counter=collections.Counter(df["emotion"])
         total_label_count[i] = len(df["emotion"])
-        label_count_absolute =  {emo_map_inverse[k]: v for k, v in dict(counter).items()}
+        label_count_absolute =  {ed_emo_dict[k]: v for k, v in dict(counter).items()}
         label_count_percentage =  {k: round((v/total_label_count[i])*100,2) for k, v in label_count_absolute.items()}
         df = pd.DataFrame({"emotion":list(label_count_percentage.keys()),"percentage":list(label_count_percentage.values()),"absolute_value":list(label_count_absolute.values())})
         df.sort_values(by=['emotion'],inplace=True)
