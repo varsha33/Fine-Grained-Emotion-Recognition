@@ -2,13 +2,22 @@
 
 ## Setup
 
+### Data resources
+Please download the following data from the given links to. 
+	* [EmpatheticDialogues](https://github.com/facebookresearch/EmpatheticDialogues/blob/master/LICENSE)
+	* [GoEmotions](https://github.com/google-research/google-research/tree/master/goemotions)
+	* [Affect in Tweet](https://competitions.codalab.org/competitions/17751#learn_the_details-datasets)
+	* [NRC VAD Lexicon](https://saifmohammad.com/WebPages/nrc-vad.html)
+
+Note: For EmpatheticDialogue dataset, please use ed_data_extract.py to transform the data before preprocessing. 
+
+### Data preprocessing
+
 For data preprocessing, run the following command
 
 ```
 python preprocess.py
 ```
-Note: For EmpatheticDialogue dataset, please use ed_data_extract.py to transform the data before preprocessing. 
-
 For training the model, go to config.py/config_multilabel.py to set the required parameters. 
 
 The training for this work was done entirely in Google Colab due to resource requirements. Use kea_singlelabel_colab_notebook for single label setting and kea_multilabel_colab notebook for multilabel settings. 
