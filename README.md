@@ -3,11 +3,7 @@
 ## Setup
 
 ### Data resources
-Please download the following data from the given links to. 
-	* [EmpatheticDialogues](https://github.com/facebookresearch/EmpatheticDialogues/blob/master/LICENSE)
-	* [GoEmotions](https://github.com/google-research/google-research/tree/master/goemotions)
-	* [Affect in Tweet](https://competitions.codalab.org/competitions/17751#learn_the_details-datasets)
-	* [NRC VAD Lexicon](https://saifmohammad.com/WebPages/nrc-vad.html)
+Please download the following data from the given links, [EmpatheticDialogues](https://github.com/facebookresearch/EmpatheticDialogues/blob/master/LICENSE), [GoEmotions](https://github.com/google-research/google-research/tree/master/goemotions), [Affect in Tweet](https://competitions.codalab.org/competitions/17751#learn_the_details-datasets) and [NRC VAD Lexicon](https://saifmohammad.com/WebPages/nrc-vad.html)
 
 Note: For EmpatheticDialogue dataset, please use ed_data_extract.py to transform the data before preprocessing. 
 
@@ -52,7 +48,7 @@ License <https://github.com/facebookresearch/EmpatheticDialogues/blob/master/LIC
 
 4. Dataset:Affect in Tweets <https://competitions.codalab.org/competitions/17751#learn_the_details-datasets>
 
-5. Project:MoEL <https://github.com/HLTCHKUST/MoEL>
+5. Project:MoEL <https://github.com/HLTCHKUST/MoEL> <br />
 License <https://github.com/HLTCHKUST/MoEL/blob/master/LICENSE>
 
 
