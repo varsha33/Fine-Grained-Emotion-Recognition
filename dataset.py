@@ -125,9 +125,9 @@ def collate_fn(data):
     ## input
     input_batch,input_attn_mask, input_lengths = merge(item_info['utterance_data'])
 
-    ainput_batch,_,ainput_lengths = merge(item_info['arousal_data'],N=512,lexicon=True) # not used here, 600 just to make up to xlnet tokenization
-    vinput_batch,_,vinput_lengths = merge(item_info['valence_data'],N=512,lexicon=True) # not used here
-    dinput_batch,_,dinput_lengths = merge(item_info['dom_data'],N=512,lexicon=True) # not used here
+    ainput_batch,_,ainput_lengths = merge(item_info['arousal_data'],N=512,lexicon=True)
+    vinput_batch,_,vinput_lengths = merge(item_info['valence_data'],N=512,lexicon=True)
+    dinput_batch,_,dinput_lengths = merge(item_info['dom_data'],N=512,lexicon=True)
 
 
     d = {}

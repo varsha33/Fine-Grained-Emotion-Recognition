@@ -27,20 +27,6 @@ def get_one_hot(emo, class_size):
     return list(targets)
 
 
-def extract_data_stats():
-
-    total_label_count,label_count_absolute,label_count_percentage = {},{},{}
-    for i in ["train","test","valid"]:
-        data_home = "./.data/empathetic_dialogues/"+i+".csv"
-        df = pd.read_csv(data_home)
-        counter=collections.Counter(df["emotion"])
-        total_label_count[i] = len(df["emotion"])
-        label_count_absolute =  {emo_map_inverse[k]: v for k, v in dict(counter).items()}
-        label_count_percentage =  {k: round((v/total_label_count[i])*100,2) for k, v in label_count_absolute.items()}
-        df = pd.DataFrame({"emotion":list(label_count_percentage.keys()),"percentage":list(label_count_percentage.values()),"absolute_value":list(label_count_absolute.values())})
-        df.sort_values(by=['emotion'],inplace=True)
-        df.to_csv("./.data/empathetic_dialogues/"+i+"_stats.csv",index=False)
-
 def get_speaker_info(speaker_id):
     if int(speaker_id) % 2 == 0:
         speaker = 1 # listener utterance
