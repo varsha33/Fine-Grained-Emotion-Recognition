@@ -15,21 +15,15 @@ import collections
 ## custom packages
 from extract_lexicon import get_arousal_vec,get_valence_vec,get_dom_vec
 from utils import flatten_list,tweet_preprocess
-
-
-emo_map = {'surprised': 0, 'excited': 1, 'annoyed': 2, 'proud': 3, 'angry': 4, 'sad': 5, 'grateful': 6, 'lonely': 7,
-    'impressed': 8, 'afraid': 9, 'disgusted': 10, 'confident': 11, 'terrified': 12, 'hopeful': 13, 'anxious': 14, 'disappointed': 15,
-    'joyful': 16, 'prepared': 17, 'guilty': 18, 'furious': 19, 'nostalgic': 20, 'jealous': 21, 'anticipating': 22, 'embarrassed': 23,
-    'content': 24, 'devastated': 25, 'sentimental': 26, 'caring': 27, 'trusting': 28, 'ashamed': 29, 'apprehensive': 30, 'faithful': 31}
-
-emo_map_inverse =  {v: k for k, v in emo_map.items()}
+from label_dict import ed_label_dict as emo_map
+from label_dict import ed_emo_dict as emo_map_inverse
 
 def get_one_hot(emo, class_size):
 
     targets = np.zeros(class_size)
     emo_list = [int(e) for e in emo.split(",")]
     for e in emo_list:
-        targets[e-1] = 1
+        targets[e] = 1
     return list(targets)
 
 
@@ -197,7 +191,7 @@ def tokenize_data(processed_data,tokenizer_type="bert-base-uncased"):
 def go_emotions_preprocess(tokenizer_type="bert-base-uncased"):
         data_dict = {}
         data_home = "./.data/goemotions/"
-        nlabel = 27
+        nlabel = 28
 
         for datatype in ["train","valid","test"]:
             datafile = data_home + datatype + ".tsv"
@@ -333,7 +327,7 @@ if __name__ == '__main__':
         glove_word_embeddings = []
 
         if tokenizer_type == "bert-base-uncased":
-            with open('./.preprocessed_data/mid_dataset_preproc.p', "wb") as f:
+            with open('./.preprocessed_data/ed_dataset_preproc.p', "wb") as f:
                 pickle.dump([train_save_data, valid_save_data, test_save_data, glove_vocab_size,glove_word_embeddings], f)
                 print("Saved PICKLE")
     elif args.d == "goemotions":

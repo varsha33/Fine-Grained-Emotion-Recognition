@@ -14,7 +14,7 @@ For data preprocessing, run the following command
 ```
 python preprocess.py
 ```
-For training the model, go to config.py/config_multilabel.py to set the required parameters. 
+For training the model, go to config.py or config_multilabel.py to set the required parameters. 
 
 The training for this work was done entirely in Google Colab due to resource requirements. Use kea_singlelabel_colab_notebook for single label setting and kea_multilabel_colab notebook for multilabel settings. 
 
@@ -23,7 +23,8 @@ The training for this work was done entirely in Google Colab due to resource req
 Follow the below instructions to use the python scripts
 
 ```
-python train.py
+python train.py ## for single-label settings
+python train_multilabel.py ## for multi-label settings
 ```
 
 ## Requirements

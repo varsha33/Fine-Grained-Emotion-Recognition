@@ -77,7 +77,7 @@ def eval_model(model, val_iter, loss_fn,log_dict,save_home):
 
         # print(y_true[:5,:],y_pred[:5,:])
         if log_dict.param.dataset == "goemotions":
-            for i in range(27):
+            for i in range(28):
                 emotion = goemotions_emo_dict[i]
                 emotion_true = y_true[:, i]
                 emotion_pred = y_pred[:, i]

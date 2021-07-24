@@ -7,7 +7,7 @@ learning_rate = 3e-05
 batch_size =10
 
 if dataset == "goemotions":
-    output_size = 27
+    output_size = 28
 elif dataset == "semeval":
     output_size = 11
 

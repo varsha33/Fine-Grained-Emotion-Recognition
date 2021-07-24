@@ -149,7 +149,7 @@ def get_dataloader(batch_size,dataset,arch_name):
 
     if dataset == "ed":
 
-        with open('./.preprocessed_data/mid_dataset_preproc.p', "rb") as f:
+        with open('./.preprocessed_data/ed_dataset_preproc.p', "rb") as f:
             [data_train, data_valid, data_test, vocab_size, word_embeddings] = pickle.load(f)
         f.close()
 

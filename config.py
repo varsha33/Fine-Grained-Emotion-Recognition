@@ -3,7 +3,7 @@ dataset = "ed"
 
 learning_rate = 3e-05
 
-batch_size = 1
+batch_size = 10
 
 if dataset == "ed":
     output_size = 32

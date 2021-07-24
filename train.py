@@ -76,7 +76,7 @@ def train_epoch(model, train_iter, epoch,loss_fn,optimizer,log_dict):
 
 		total_epoch_loss += loss.item()
 		total_epoch_acc += acc.item()
-		break
+
 	return total_epoch_loss/len(train_iter), total_epoch_acc/len(train_iter)
 
 def train_model(log_dict,data,model,loss_fn,optimizer,lr_scheduler,writer,save_home):
